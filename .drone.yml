@@ -1,0 +1,23 @@
+kind: pipeline
+type: docker
+name: default 
+
+steps:
+- name: docker
+  image: plugins/docker
+  environment:
+    GIT_TOKEN:
+      from_secret: GIT_TOKEN
+  settings:
+    repo: docker.ogkw.de/master-thesis/relying-party
+    registry: docker.ogkw.de
+    tags: latest
+    dockerfile: .docker/Dockerfile.dev
+    purge: true
+    build_args_from_env:
+      - GIT_TOKEN
+trigger:
+ event:
+  - custom
+ branch:
+   - master

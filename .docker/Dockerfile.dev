@@ -1,0 +1,34 @@
+FROM  mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-20.04
+
+WORKDIR /setup
+ENV DEBIAN_FRONTEND=noninteractive
+ENV GO_LINK=https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
+RUN apt update \
+	&& apt install -y libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev libmariadbclient-dev clang-12 clangd-12 zsh cmake make doxygen git curl g++ \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Oh my zsh
+#RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && chsh -s $(which zsh)
+
+# Change zsh theme
+#RUN sed -E '/ZSH_THEME/s/=.*/="af-magic"/g' ~/.zshrc
+
+#RUN git config --global user.name “Jesper S.”
+#RUN git config --global user.email “jesper@ogkw.de”
+#RUN git config --global credential.helper store
+
+# Install go
+RUN curl -L -o go.tar.gz $GO_LINK && \
+	rm -rf /usr/local/go && tar -C /usr/local -xzf go.tar.gz && \
+	rm go.tar.gz
+
+WORKDIR /drogon
+RUN git clone https://github.com/drogonframework/drogon \
+	&& cd drogon \
+	&& git submodule update --init \
+	&& mkdir build \
+	&& cd build \
+	&& cmake .. \
+	&& make && make install
+
+WORKDIR /server

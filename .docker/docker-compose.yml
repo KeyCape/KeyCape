@@ -1,0 +1,9 @@
+version: '3'
+services:
+  relying-party:
+   image: docker.ogkw.de/master-thesis/relying-party
+   container_name: 'relying-party'
+   volumes:
+     - ./:/server
+   ports:
+     - 80:80
