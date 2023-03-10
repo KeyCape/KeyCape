@@ -3,6 +3,28 @@
 #include <drogon/HttpResponse.h>
 #include <drogon/utils/FunctionTraits.h>
 
+// Standard constructor
+Register::Register() {
+  auto relyingPartyId = std::getenv("WEBAUTHN_RP_ID");
+  auto relyingPartyName = std::getenv("WEBAUTHN_RP_NAME");
+
+  if (relyingPartyId != NULL) {
+    auto rpId = std::string{relyingPartyId};
+    this->webauthn.setRpId(rpId);
+  } else {
+    auto rpId = std::string{"localhost"};
+    this->webauthn.setRpId(rpId);
+  }
+
+  if (relyingPartyName != NULL) {
+    auto rpName = std::string{relyingPartyName};
+    this->webauthn.setRpName(rpName);
+  } else {
+    auto rpName = std::string{"localhost"};
+    this->webauthn.setRpName(rpName);
+  }
+}
+
 // Add definition of your processing function here
 drogon::AsyncTask
 Register::begin(const HttpRequestPtr req,
