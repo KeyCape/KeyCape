@@ -15,7 +15,7 @@
     <br>
     <br>
     <button onclick="registerUser()">Register</button>
-    <!--<button onclick="loginUser()">Login</button>-->
+    <button onclick="loginUser()">Login</button>
 
     <script>
 
@@ -119,13 +119,15 @@
                 'json')
                 .then((credentialRequestOptions) => {
                     console.log(credentialRequestOptions)
-                    credentialRequestOptions.publicKey.challenge = bufferDecode(credentialRequestOptions.publicKey.challenge);
-                    credentialRequestOptions.publicKey.allowCredentials.forEach(function (listItem) {
+                    credentialRequestOptions.challenge = bufferDecode(credentialRequestOptions.challenge);
+                    credentialRequestOptions.allowCredentials.forEach(function (listItem) {
                         listItem.id = bufferDecode(listItem.id)
                     });
 
+                    console.log("Decoded");
+
                     return navigator.credentials.get({
-                        publicKey: credentialRequestOptions.publicKey
+                        publicKey: credentialRequestOptions
                     })
                 })
                 .then((assertion) => {
