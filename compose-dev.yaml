@@ -12,7 +12,7 @@ services:
    restart: always
   db:
    image: mariadb
-   container_name: db
+   container_name: rp_db
    restart: always
    environment: 
     MARIADB_ROOT_PASSWORD: dev
@@ -20,5 +20,5 @@ services:
     - ./docker/mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
   redis:
     image: redis:latest
-    container_name: redis
+    container_name: rp_redis
     restart: always

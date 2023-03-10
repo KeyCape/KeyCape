@@ -10,7 +10,7 @@
         {
             "name": "db",
             "rdbms": "mysql",
-            "host": "db",
+            "host": "rp_db",
             "port": 3306,
             "dbname": "webauthn",
             "user": "root",
@@ -22,7 +22,7 @@
     ],
     "redis_clients": [
         {
-            "host": "redis",
+            "host": "rp_redis",
             "port": 6379,
             "passwd": "",
             "db": 0,
