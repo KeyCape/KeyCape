@@ -8,10 +8,11 @@ using namespace drogon;
 class Register : public drogon::HttpController<Register>
 {
   private:
-  Webauthn webauthn;
+  Webauthn webauthn{"localhost", "localhost"};
   public:
     METHOD_LIST_BEGIN
     METHOD_ADD(Register::begin, "/begin/{name}", Get);
+    METHOD_ADD(Register::finish, "/finish/{name}", Post);
 
     // use METHOD_ADD to add your custom processing function here;
     // METHOD_ADD(Register::get, "/{2}/{1}", Get); // path is /Register/{arg2}/{arg1}
@@ -24,4 +25,5 @@ class Register : public drogon::HttpController<Register>
     // void your_method_name(const HttpRequestPtr& req, std::function<void (const HttpResponsePtr &)> &&callback, double p1, int p2) const;
 
     void begin(const HttpRequestPtr &req, std::function<void (const HttpResponsePtr &)> &&callback, std::string &&name);
+    void finish(const HttpRequestPtr &req, std::function<void (const HttpResponsePtr &)> &&callback, std::string &&name);
 };
