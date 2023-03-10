@@ -59,6 +59,7 @@ else ()
     message(STATUS "use c++20")
 endif ()
 
+aux_source_directory(controllers/helper HELPER_SRC)
 aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
@@ -76,9 +77,11 @@ drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 
 target_include_directories(${PROJECT_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/models)
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/models
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/controllers)
 target_sources(${PROJECT_NAME}
                PRIVATE
+               ${HELPER_SRC}
                ${SRC_DIR}
                ${CTL_SRC}
                ${FILTER_SRC}
