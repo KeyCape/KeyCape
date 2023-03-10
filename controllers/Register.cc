@@ -14,6 +14,7 @@ void Register::begin(const HttpRequestPtr &reg,
     resp->setStatusCode(HttpStatusCode::k400BadRequest);
   }
 
-  resp = drogon::HttpResponse::newHttpJsonResponse(this->webauthn.beginRegistration(name).getJson());
-  callback(resp);
+  auto json = this->webauthn.beginRegistration(name)->getJson();
+
+  callback(drogon::HttpResponse::newHttpJsonResponse(*json));
 }
