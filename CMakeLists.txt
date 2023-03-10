@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.11)
 project(relying-party CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
