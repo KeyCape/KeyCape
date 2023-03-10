@@ -21,3 +21,28 @@ trigger:
   - custom
  branch:
    - master
+
+---
+kind: pipeline
+type: docker
+name: build
+
+steps:
+- name: build
+  image: plugins/docker
+  environment:
+    GIT_TOKEN:
+      from_secret: GIT_TOKEN
+  settings:
+    repo: docker.ogkw.de/master-thesis/relying-party:build
+    registry: docker.ogkw.de
+    tags: latest
+    dockerfile: .docker/Dockerfile.build
+    purge: true
+    build_args_from_env:
+      - GIT_TOKEN
+trigger:
+ event:
+  - custom
+ branch:
+   - master
