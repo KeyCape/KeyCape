@@ -77,8 +77,8 @@
                     let rawId = credential.rawId;
 
                     $.ajax({
-                        url: '/register/finish/' + username, 
-                        type: 'POST', contentType: 'application/json', 
+                        url: '/register/finish/' + username,
+                        type: 'POST', contentType: 'application/json',
                         data: JSON.stringify({
                             id: credential.id,
                             rawId: bufferEncode(rawId),
@@ -88,10 +88,10 @@
                                 clientDataJSON: bufferEncode(clientDataJSON),
                             },
                         }),
-                        error: function(xhr, err) {
+                        error: function (xhr, err) {
                             alert("Registration failed: " + xhr.responseText + "!")
                         },
-                        success: function(data, status, xhr) {
+                        success: function (data, status, xhr) {
                             alert("Registration successful")
                         }
                     })
@@ -140,7 +140,7 @@
 
                     $.ajax({
                         url: '/login/finish/' + username,
-                        type: 'POST', contentType: 'application/json', 
+                        type: 'POST', contentType: 'application/json',
                         data: JSON.stringify({
                             id: assertion.id,
                             rawId: bufferEncode(rawId),
@@ -152,9 +152,10 @@
                                 userHandle: bufferEncode(userHandle),
                             },
                         }),
-                        function (data) {
+                        function(data) {
                             return data
-                        }})
+                        }
+                    })
                 })
                 .then((success) => {
                     alert("successfully logged in " + username + "!")
