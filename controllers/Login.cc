@@ -119,7 +119,8 @@ Login::finish(HttpRequestPtr req,
     auto dbPtr = app().getDbClient("");
     auto sqlResultUserCredentialList = co_await dbPtr->execSqlCoro(
         "SELECT credential_id, credential_type, "
-        "credential_signcount, be, bs, kty, alg, crv, x, y, n, e "
+        "credential_signcount, be, bs, kty, alg, crv, x, y, n, e, "
+        "fk_resource_owner_id "
         "FROM webauthn.credential WHERE fk_resource_owner_id=(SELECT id FROM "
         "webauthn.resource_owner WHERE username=?)",
         name.c_str());
@@ -145,7 +146,8 @@ Login::finish(HttpRequestPtr req,
       CredentialRecord tmpCred;
       tmpCred.uName = std::make_shared<std::string>(name);
       tmpCred.id = std::make_shared<std::string>(drogon::utils::base64Encode(
-          (const unsigned char *)row["credential_id"].c_str(), row["credential_id"].length(), true));
+          (const unsigned char *)row["credential_id"].c_str(),
+          row["credential_id"].length(), true));
       Base64Url::encode(tmpCred.id);
       switch (row["credential_type"].as<uint32_t>()) {
       case PublicKeyCredentialType::public_key:
@@ -253,6 +255,16 @@ Login::finish(HttpRequestPtr req,
     } else {
       sessionPtr->insert("token", *credRecIt);
     }
+
+    // Used by openId connects ID Token
+    LOG_DEBUG << "Set the users last login time in redis";
+    co_await redisClient->execCommandCoro(
+        "SET user:%u:last_login %d",
+        sqlResultUserCredentialList[0]["fk_resource_owner_id"]
+            .as<size_t>(),
+        std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count());
 
     callback(drogon::HttpResponse::newHttpResponse());
   } catch (std::invalid_argument &ex) {
