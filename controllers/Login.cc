@@ -127,8 +127,7 @@ Login::finish(HttpRequestPtr req,
       co_return;
     }
 
-    auto pubKeyCredReqOpt = PublicKeyCredentialCreationOptions::fromJson(root);
-    auto jsonReq = req->jsonObject();
+    auto pubKeyCredReqOpt = PublicKeyCredentialRequestOptions::fromJson(root);
 
     // Pull user credentials from the database
     auto dbPtr = app().getDbClient("");
@@ -153,7 +152,9 @@ Login::finish(HttpRequestPtr req,
     for (auto row : sqlResultUserCredentialList) {
       CredentialRecord tmpCred;
       tmpCred.uName = std::make_shared<std::string>(row[0].as<std::string>());
-      tmpCred.id = std::make_shared<std::string>(row[1].as<std::string>());
+      tmpCred.id = std::make_shared<std::string>(drogon::utils::base64Encode(
+          (const unsigned char *)row[1].c_str(), row[1].length(), true));
+      Base64Url::encode(tmpCred.id);
       switch (row[2].as<uint32_t>()) {
       case PublicKeyCredentialType::public_key:
         tmpCred.type = PublicKeyCredentialType::public_key;
@@ -222,8 +223,15 @@ Login::finish(HttpRequestPtr req,
         break;
       }
       tmpCred.publicKey->alg = static_cast<COSEAlgorithmIdentifier>(algorithm);
+      credRec->emplace_front(std::move(tmpCred));
     }
 
+    auto pKeyCred =
+        std::make_shared<PublicKeyCredential<AuthenticatorAssertionResponse>>();
+    auto jsonReq = req->getJsonObject();
+    pKeyCred->fromJson(jsonReq);
+
+    this->webauthn.finishLogin(pKeyCred, pubKeyCredReqOpt, credRec);
   } catch (std::invalid_argument &ex) {
     LOG_INFO << "An exception occured: " << ex.what();
     callback(toError(drogon::HttpStatusCode::k400BadRequest, ex.what()));
