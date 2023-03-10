@@ -17,7 +17,7 @@ services:
    environment: 
     MARIADB_ROOT_PASSWORD: dev
    volumes:
-    - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    - ./docker/mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
   redis:
     image: redis:latest
     container_name: redis
