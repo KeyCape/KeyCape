@@ -87,9 +87,22 @@ Register::finish(HttpRequestPtr req,
       co_return;
     }
 
+
+   //std::string body = req->body();
+   // std::shared_ptr<Json::Value> reqJson = std::make_shared<Json::Value>();
+   // Json::CharReaderBuilder reqBuilder;
+   // std::unique_ptr<Json::CharReader> reqReader{reqBuilder.newCharReader()};
+
+   // if (!reader->parse(body.c_str(), body.c_str()+ body.length(), &(*reqJson), nullptr)) {
+   //   LOG_DEBUG << "Couldn't parse the request body to JSON";
+   //   callback(toError(drogon::HttpStatusCode::k500InternalServerError,
+   //                    "Internal server error"));
+   //   co_return;
+   // }
+
     std::shared_ptr<PublicKeyCredentialCreationOptions> options = PublicKeyCredentialCreationOptions::fromJson(root);
-    
-   // this->webauthn.finishRegistration(nullptr);
+   auto jsonObj = req->jsonObject();
+   this->webauthn.finishRegistration(options, req->getJsonObject());
 
     callback(drogon::HttpResponse::newHttpResponse());
 
