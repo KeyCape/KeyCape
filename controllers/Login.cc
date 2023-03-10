@@ -58,11 +58,26 @@ Login::begin(HttpRequestPtr req,
           record.bs = row["bs"].as<bool>();
           return record;
         });
+
     LOG_DEBUG << "Found " << sqlResultUserCredential.size()
               << " credentials for the username " << name;
 
     auto response = this->webauthn.beginLogin(credentialRecordList);
-    callback(drogon::HttpResponse::newHttpJsonResponse(*response->getJson()));
+
+    // PublicKeyCredentialRequestOptions as json
+    auto jsonPubKeyCredReqOpt = response->getJson();
+    auto builder = Json::StreamWriterBuilder{};
+    builder["indentation"] = "";
+    builder["commentStyle"] = "None";
+    auto strJsonResponse = Json::writeString(builder, *jsonPubKeyCredReqOpt);
+
+    // Cache PublicKeyCredentialRequestOptions
+    LOG_DEBUG << "Cache the response";
+    auto redisClient = app().getRedisClient();
+    co_await redisClient->execCommandCoro("set login:%s %s", name.c_str(),
+                                          strJsonResponse.c_str());
+    LOG_DEBUG << "Response " << strJsonResponse;
+    callback(drogon::HttpResponse::newHttpJsonResponse(*jsonPubKeyCredReqOpt));
 
   } catch (std::invalid_argument &ex) {
     LOG_INFO << "An exception occured: " << ex.what();
