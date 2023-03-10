@@ -5,8 +5,8 @@ CREATE TABLE public_key(
     kty INT,
     alg INT,
     crv INT,
-    x VARCHAR(32),
-    y VARCHAR(32),
+    x TINYBLOB,
+    y TINYBLOB,
     n VARCHAR(256),
     e VARCHAR(3),
     PRIMARY KEY(id)
@@ -14,7 +14,8 @@ CREATE TABLE public_key(
 
 CREATE TABLE credential(
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    credential_id VARCHAR(1023) NOT NULL UNIQUE,
+    username VARCHAR(45) NOT NULL,
+    credential_id BLOB NOT NULL UNIQUE,
     credential_type INT NOT NULL,
     credential_signcount INT UNSIGNED NOT NULL,
     be BOOL,
