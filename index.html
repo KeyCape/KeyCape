@@ -58,16 +58,16 @@
                 'json')
                 .then((credentialCreationOptions) => {
                     console.log(credentialCreationOptions)
-                    credentialCreationOptions.publicKey.challenge = bufferDecode(credentialCreationOptions.publicKey.challenge);
-                    credentialCreationOptions.publicKey.user.id = bufferDecode(credentialCreationOptions.publicKey.user.id);
-                    if (credentialCreationOptions.publicKey.excludeCredentials) {
-                        for (var i = 0; i < credentialCreationOptions.publicKey.excludeCredentials.length; i++) {
-                            credentialCreationOptions.publicKey.excludeCredentials[i].id = bufferDecode(credentialCreationOptions.publicKey.excludeCredentials[i].id);
+                    credentialCreationOptions.challenge = bufferDecode(credentialCreationOptions.challenge);
+                    credentialCreationOptions.user.id = bufferDecode(credentialCreationOptions.user.id);
+                    if (credentialCreationOptions.excludeCredentials) {
+                        for (var i = 0; i < credentialCreationOptions.excludeCredentials.length; i++) {
+                            credentialCreationOptions.excludeCredentials[i].id = bufferDecode(credentialCreationOptions.excludeCredentials[i].id);
                         }
                     }
 
                     return navigator.credentials.create({
-                        publicKey: credentialCreationOptions.publicKey
+                        publicKey: credentialCreationOptions
                     })
                 })
                 .then((credential) => {
