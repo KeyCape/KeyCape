@@ -28,10 +28,12 @@ type: docker
 name: build
 
 steps:
-- name: build
-  image: plugins/docker
+- name: submodules
+  image: alpine/git
   commands:
     - git submodule update --init --recursive
+- name: build
+  image: plugins/docker
   environment:
     GIT_TOKEN:
       from_secret: GIT_TOKEN
