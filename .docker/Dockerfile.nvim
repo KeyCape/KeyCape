@@ -9,8 +9,8 @@ RUN apt update && apt upgrade -y && apt install -y curl
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 RUN apt update && apt upgrade -y \
 	&& apt install -y \
-	clangd-10 cmake make g++ git nodejs python3-pip ninja-build gettext libtool libtool-bin autoconf automake pkg-config unzip doxygen zsh tmux clang-12 \
-	&& update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-10 100 \
+	clangd-14 cmake make g++ git nodejs python3-pip ninja-build gettext libtool libtool-bin autoconf automake pkg-config unzip doxygen zsh tmux clang-14 \
+	&& update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 100 \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Clone neovim config
