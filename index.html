@@ -209,23 +209,25 @@
                                 signature: bufferEncode(sig),
                                 userHandle: bufferEncode(userHandle),
                             },
-                        }),
-                        function(data) {
-                            return data
-                        }
-                    }).done(() => {
+                            error: function (xhr) {
+                                document.getElementById("bannerSuccess").style.display = "none";
+                                document.getElementById("bannerFailure").innerText = "Login failed: " + xhr.responseText;
+                                document.getElementById("bannerFailure").style.display = "block";
+                                isLoggedIn();
+                            }
+                        })
+                    }).done((data) => {
                         document.getElementById("bannerFailure").style.display = "none";
                         document.getElementById("bannerSuccess").innerText = "Welcome back " + username;
                         document.getElementById("bannerSuccess").style.display = "block";
                         isLoggedIn();
+                        return data;
                     })
-                })
-                .catch((error) => {
+                }).catch((error) => {
                     document.getElementById("bannerSuccess").style.display = "none";
-                    document.getElementById("bannerFailure").innerText = "Registration failed: " + error.responseText;
+                    document.getElementById("bannerFailure").innerText = "Login failed: " + error.responseText;
                     document.getElementById("bannerFailure").style.display = "block";
                     isLoggedIn();
-                    console.log(error)
                 })
         }
 
