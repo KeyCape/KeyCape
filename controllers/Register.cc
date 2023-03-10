@@ -133,7 +133,7 @@ Register::finish(HttpRequestPtr req,
     // §7.1.24 Verify that the credentialId is not yet registered for any user.
     // If the credentialId is already known then the Relying Party SHOULD fail
     // this registration ceremony.
-    auto dbPtr = app().getDbClient("db");
+    auto dbPtr = app().getDbClient("");
     auto sqlResultUserCount = co_await dbPtr->execSqlCoro(
         "SELECT COUNT(username) FROM webauthn.credential WHERE username=?",
         name);
