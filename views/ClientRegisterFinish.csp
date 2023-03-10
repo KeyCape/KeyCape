@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+
+<head>
+    <title>Registration finished</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.ogkw.de/static/bootstrap-5.3.0-alpha1-dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.ogkw.de/static/bootstrap-5.3.0-alpha1-dist/css/bootstrap.min.css">
+    </link>
+</head>
+
+<body>
+    <div class="container text-center mt-4">
+        <h1 class="display-6">Your Application has been registered!</h1>
+        <div class="mt-4 mx-auto text-start bg-success bg-opacity-25 rounded-3 p-2" style="width:38em;">
+            <table class="table table-hover">
+                <tbody>
+                    <tr>
+                        <td class="fw-bold">Application Name</td>
+                        <td>[[app_name]]</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Website URL</td>
+                        <td>[[website_uri]]</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Callback URL</td>
+                        <td>[[callback_uri]]</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Client ID</td>
+                        <td>[[client_id]]</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Client Secret</td>
+                        <td>[[client_secret]]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+</body>
+
+</html>
