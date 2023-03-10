@@ -1,26 +1,7 @@
 #include "Login.h"
 
 // Standard constructor
-Login::Login() {
-  auto relyingPartyId = std::getenv("WEBAUTHN_RP_ID");
-  auto relyingPartyName = std::getenv("WEBAUTHN_RP_NAME");
-
-  if (relyingPartyId != NULL) {
-    auto rpId = std::string{relyingPartyId};
-    this->webauthn.setRpId(rpId);
-  } else {
-    auto rpId = std::string{"localhost"};
-    this->webauthn.setRpId(rpId);
-  }
-
-  if (relyingPartyName != NULL) {
-    auto rpName = std::string{relyingPartyName};
-    this->webauthn.setRpName(rpName);
-  } else {
-    auto rpName = std::string{"localhost"};
-    this->webauthn.setRpName(rpName);
-  }
-}
+Login::Login() {}
 
 drogon::AsyncTask
 Login::begin(HttpRequestPtr req,
@@ -62,7 +43,7 @@ Login::begin(HttpRequestPtr req,
     LOG_DEBUG << "Found " << sqlResultUserCredential.size()
               << " credentials for the username " << name;
 
-    auto response = this->webauthn.beginLogin(credentialRecordList);
+    auto response = this->webauthn->beginLogin(credentialRecordList);
 
     // PublicKeyCredentialRequestOptions as json
     auto jsonPubKeyCredReqOpt = response->getJson();
@@ -233,7 +214,7 @@ Login::finish(HttpRequestPtr req,
 
     // Check the request and update the CredentialRecord credRec
     auto credRecIt =
-        this->webauthn.finishLogin(pKeyCred, pubKeyCredReqOpt, credRec);
+        this->webauthn->finishLogin(pKeyCred, pubKeyCredReqOpt, credRec);
 
     // Update database
     auto sqlResultCredentialUpdate = co_await dbPtr->execSqlCoro(

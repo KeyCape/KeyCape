@@ -1,14 +1,12 @@
 #pragma once
+#include "WebauthnController.h"
 #include "helper/response.h"
 #include <drogon/HttpController.h>
 #include <webauthn.h>
 
 using namespace drogon;
 
-class Logout : public drogon::HttpController<Logout> {
-private:
-  Webauthn<CredentialRecord> webauthn;
-
+class Logout : public WebauthnController<Logout> {
 public:
   METHOD_LIST_BEGIN
   METHOD_ADD(Logout::logout, "", Post);

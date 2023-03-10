@@ -1,16 +1,13 @@
 #pragma once
+#include "WebauthnController.h"
+#include "helper/response.h"
 #include <CredentialRecord.h>
 #include <cstdlib>
 #include <drogon/HttpController.h>
-#include <helper/response.h>
-#include <webauthn.h>
 
 using namespace drogon;
 
-class Login : public drogon::HttpController<Login> {
-private:
-  Webauthn<CredentialRecord> webauthn;
-
+class Login : public WebauthnController<Login> {
 public:
   METHOD_LIST_BEGIN
   METHOD_ADD(Login::begin, "/begin/{name}", Get);

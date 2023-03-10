@@ -1,5 +1,6 @@
 #pragma once
-#include <helper/response.h>
+#include "WebauthnController.h"
+#include "helper/response.h"
 #include <CredentialRecord.h>
 #include <cstdlib>
 #include <drogon/HttpController.h>
@@ -7,10 +8,7 @@
 
 using namespace drogon;
 
-class Register : public drogon::HttpController<Register> {
-private:
-  Webauthn<CredentialRecord> webauthn;
-
+class Register : public WebauthnController<Register> {
 public:
   METHOD_LIST_BEGIN
   METHOD_ADD(Register::begin, "/begin/{name}", Get);

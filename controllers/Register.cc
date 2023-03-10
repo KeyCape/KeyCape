@@ -4,26 +4,7 @@
 #include <drogon/utils/FunctionTraits.h>
 
 // Standard constructor
-Register::Register() {
-  auto relyingPartyId = std::getenv("WEBAUTHN_RP_ID");
-  auto relyingPartyName = std::getenv("WEBAUTHN_RP_NAME");
-
-  if (relyingPartyId != NULL) {
-    auto rpId = std::string{relyingPartyId};
-    this->webauthn.setRpId(rpId);
-  } else {
-    auto rpId = std::string{"localhost"};
-    this->webauthn.setRpId(rpId);
-  }
-
-  if (relyingPartyName != NULL) {
-    auto rpName = std::string{relyingPartyName};
-    this->webauthn.setRpName(rpName);
-  } else {
-    auto rpName = std::string{"localhost"};
-    this->webauthn.setRpName(rpName);
-  }
-}
+Register::Register() {}
 
 // Add definition of your processing function here
 drogon::AsyncTask
@@ -44,7 +25,7 @@ Register::begin(const HttpRequestPtr req,
       co_return;
     }
     // PublicKeyCredentialCreationOptions as json
-    auto jsonPubKeyCredOpt = this->webauthn.beginRegistration(name)->getJson();
+    auto jsonPubKeyCredOpt = this->webauthn->beginRegistration(name)->getJson();
     auto builder = Json::StreamWriterBuilder{};
     builder["indentation"] = "";
     builder["commentStyle"] = "None";
@@ -126,7 +107,7 @@ Register::finish(HttpRequestPtr req,
         PublicKeyCredentialCreationOptions::fromJson(root);
     auto jsonObj = req->jsonObject();
     auto credentialRecord =
-        this->webauthn.finishRegistration(options, req->getJsonObject());
+        this->webauthn->finishRegistration(options, req->getJsonObject());
 
     // Verify that the user isn't already registered. And if, then the user must
     // be logged in.
