@@ -1,10 +1,10 @@
-FROM  mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-20.04
+FROM  mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-22.04
 
 WORKDIR /setup
 ENV DEBIAN_FRONTEND=noninteractive
 ENV GO_LINK=https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
 RUN apt update \
-	&& apt install -y libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev libmariadbclient-dev clang-12 clangd-12 zsh cmake make doxygen git curl g++ \
+	&& apt install -y libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev libmariadbclient-dev clang-12 clangd-12 zsh cmake make doxygen git curl gcc-12 \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Oh my zsh
@@ -18,10 +18,10 @@ RUN apt update \
 #RUN git config --global credential.helper store
 
 # Install go
-RUN curl -L -o go.tar.gz $GO_LINK && \
-	rm -rf /usr/local/go && tar -C /usr/local -xzf go.tar.gz && \
-	rm go.tar.gz
-
+#RUN curl -L -o go.tar.gz $GO_LINK && \
+#	rm -rf /usr/local/go && tar -C /usr/local -xzf go.tar.gz && \
+#	rm go.tar.gz
+#
 WORKDIR /drogon
 RUN git clone https://github.com/drogonframework/drogon \
 	&& cd drogon \
