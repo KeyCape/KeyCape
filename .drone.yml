@@ -30,6 +30,8 @@ name: build
 steps:
 - name: build
   image: plugins/docker
+  commands:
+    - git submodule update --init --recursive
   environment:
     GIT_TOKEN:
       from_secret: GIT_TOKEN
