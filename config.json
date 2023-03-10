@@ -9,7 +9,7 @@
     "db_clients": [
         {
             "name": "db",
-            "rdbms": "mariadb",
+            "rdbms": "mysql",
             "host": "db",
             "port": 3306,
             "dbname": "webauthn",
