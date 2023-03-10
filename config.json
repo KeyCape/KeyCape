@@ -36,7 +36,7 @@
         "enable_session": false,
         "session_timeout": 0,
         "session_same_site": "Null",
-        "document_root": "./",
+        "document_root": "static",
         "home_page": "index.html",
         "use_implicit_page": true,
         "implicit_page": "index.html",
