@@ -10,6 +10,9 @@ services:
    command: zsh
    user: 'vscode:1000'
    restart: always
+   environment:
+    WEBAUTHN_RP_ID: localhost
+    WEBAUTHN_RP_NAME: localhost
   db:
    image: mariadb
    container_name: db
