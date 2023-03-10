@@ -37,12 +37,12 @@ template <typename T> WebauthnController<T>::WebauthnController() {
     // Set Policy
     policy = std::make_shared<Policy>();
     policy->userVerification = std::make_shared<UserVerificationRequirement>(
-        UserVerificationRequirement::preferred);
+        UserVerificationRequirement::required);
     policy->attestation = std::make_shared<AttestationConveyancePreference>(
-        AttestationConveyancePreference::none);
+        AttestationConveyancePreference::indirect);
     policy->attStmtFmts = std::make_shared<
         std::forward_list<AttestationStatementFormatIdentifier>>();
-    policy->attStmtFmts->push_front(AttestationStatementFormatIdentifier::none);
+    policy->attStmtFmts->push_front(AttestationStatementFormatIdentifier::fido_u2f);
 
     // Create instance of webauthn
     webauthn =
