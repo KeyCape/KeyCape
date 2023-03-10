@@ -3,7 +3,11 @@ type: docker
 name: default 
 
 steps:
-- name: docker
+- name: submodules
+  image: alpine/git
+  commands:
+    - git submodule update --init --recursive
+- name: build docker dev image
   image: plugins/docker
   environment:
     GIT_TOKEN:
@@ -16,23 +20,7 @@ steps:
     purge: true
     build_args_from_env:
       - GIT_TOKEN
-trigger:
- event:
-  - custom
- branch:
-   - master
-
----
-kind: pipeline
-type: docker
-name: build
-
-steps:
-- name: submodules
-  image: alpine/git
-  commands:
-    - git submodule update --init --recursive
-- name: build
+- name: build docker test image
   image: plugins/docker
   environment:
     GIT_TOKEN:
@@ -40,7 +28,7 @@ steps:
   settings:
     repo: docker.ogkw.de/master-thesis/relying-party
     registry: docker.ogkw.de
-    tags: build
+    tags: test
     dockerfile: .docker/Dockerfile.build
     purge: true
     build_args_from_env:
