@@ -1,3 +1,4 @@
+[![Build Status](https://drone.ogkw.de/api/badges/jesper-sec/identity-provider-cpp/status.svg)](https://drone.ogkw.de/jesper-sec/identity-provider-cpp)
 # Overview
 This project is an identity provider implemented in C++. It leverages the library `libwebauthn-cpp` to enable the usage of passwordless authentication.
 
