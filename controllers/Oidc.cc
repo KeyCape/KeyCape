@@ -124,7 +124,7 @@ Oidc::authorize(HttpRequestPtr req,
     // Check if the client_id is registered
     auto dbClient = app().getDbClient("");
     auto sqlResultClient = co_await dbClient->execSqlCoro(
-        "SELECT id FROM oidc_client as c INNER JOIN oidc_client_uri as u ON "
+        "SELECT id,app_name FROM oidc_client as c INNER JOIN oidc_client_uri as u ON "
         "c.id=u.fk_oidc_client_id WHERE c.client_id=? AND u.uri=?",
         client_id, redirect_uri);
 
@@ -192,7 +192,7 @@ Oidc::authorize(HttpRequestPtr req,
 
     // Generate authorization view.
     HttpViewData data;
-    data.insert("appName", "TEST");
+    data.insert("appName", sqlResultClient[0]["app_name"].as<std::string>());
     data.insert("token", token);
     data.insert("data", std::forward_list<std::string>({"openid"}));
     callback(HttpResponse::newHttpViewResponse("Authorize.csp", data));
