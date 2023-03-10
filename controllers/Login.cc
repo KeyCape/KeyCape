@@ -232,6 +232,8 @@ Login::finish(HttpRequestPtr req,
     pKeyCred->fromJson(jsonReq);
 
     this->webauthn.finishLogin(pKeyCred, pubKeyCredReqOpt, credRec);
+
+    callback(drogon::HttpResponse::newHttpResponse());
   } catch (std::invalid_argument &ex) {
     LOG_INFO << "An exception occured: " << ex.what();
     callback(toError(drogon::HttpStatusCode::k400BadRequest, ex.what()));
