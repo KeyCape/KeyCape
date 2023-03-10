@@ -138,9 +138,10 @@
                     let sig = assertion.response.signature;
                     let userHandle = assertion.response.userHandle;
 
-                    $.post(
-                        '/login/finish/' + username,
-                        JSON.stringify({
+                    $.ajax({
+                        url: '/login/finish/' + username,
+                        type: 'POST', contentType: 'application/json', 
+                        data: JSON.stringify({
                             id: assertion.id,
                             rawId: bufferEncode(rawId),
                             type: assertion.type,
@@ -153,8 +154,7 @@
                         }),
                         function (data) {
                             return data
-                        },
-                        'json')
+                        }})
                 })
                 .then((success) => {
                     alert("successfully logged in " + username + "!")
