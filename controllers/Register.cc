@@ -42,24 +42,22 @@ Register::begin(const HttpRequestPtr req,
       callback(toError(drogon::HttpStatusCode::k400BadRequest,
                        "The username is invalid"));
       co_return;
-    } else {
-      // PublicKeyCredentialCreationOptions as json
-      auto jsonPubKeyCredOpt =
-          this->webauthn.beginRegistration(name)->getJson();
-      auto builder = Json::StreamWriterBuilder{};
-      builder["indentation"] = "";
-      builder["commentStyle"] = "None";
-      auto strJsonResponse = Json::writeString(builder, *jsonPubKeyCredOpt);
-
-      // Store the users registration data
-      auto redisClient = app().getRedisClient();
-
-      co_await redisClient->execCommandCoro(
-          "set registration:%s %s EX 20", name.c_str(), strJsonResponse.c_str());
-
-      LOG_DEBUG << "Response " << strJsonResponse;
-      callback(drogon::HttpResponse::newHttpJsonResponse(*jsonPubKeyCredOpt));
     }
+    // PublicKeyCredentialCreationOptions as json
+    auto jsonPubKeyCredOpt = this->webauthn.beginRegistration(name)->getJson();
+    auto builder = Json::StreamWriterBuilder{};
+    builder["indentation"] = "";
+    builder["commentStyle"] = "None";
+    auto strJsonResponse = Json::writeString(builder, *jsonPubKeyCredOpt);
+
+    // Store the users registration data
+    auto redisClient = app().getRedisClient();
+
+    co_await redisClient->execCommandCoro(
+        "set registration:%s %s EX 20", name.c_str(), strJsonResponse.c_str());
+
+    LOG_DEBUG << "Response " << strJsonResponse;
+    callback(drogon::HttpResponse::newHttpJsonResponse(*jsonPubKeyCredOpt));
 
   } catch (const std::exception &ex) {
     LOG_ERROR << "An exception occured: " << ex.what();
