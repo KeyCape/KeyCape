@@ -72,7 +72,26 @@ Register::finish(HttpRequestPtr req,
                       ". /register/begin must have been called berforehand"));
       co_return;
     }
-    LOG_INFO << "Redis: Found entry: " << redisRes.asString();
+    std::string optionsJson{redisRes.asString()};
+    LOG_INFO << "Redis: Found entry: " << optionsJson.c_str();
+
+    LOG_DEBUG << "Deserialize database entry...";
+    std::shared_ptr<Json::Value> root = std::make_shared<Json::Value>();
+    Json::CharReaderBuilder builder;
+    std::unique_ptr<Json::CharReader> reader{builder.newCharReader()};
+
+    if (!reader->parse(optionsJson.c_str(), optionsJson.c_str()+ optionsJson.length(), &(*root), nullptr)) {
+      LOG_DEBUG << "Couldn't parse the database entry to JSON";
+      callback(toError(drogon::HttpStatusCode::k500InternalServerError,
+                       "Internal server error"));
+      co_return;
+    }
+
+    std::shared_ptr<PublicKeyCredentialCreationOptions> options = PublicKeyCredentialCreationOptions::fromJson(root);
+    
+   // this->webauthn.finishRegistration(nullptr);
+
+    callback(drogon::HttpResponse::newHttpResponse());
 
   } catch (const std::exception &ex) {
     LOG_ERROR << "An exception occured: " << ex.what();
