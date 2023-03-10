@@ -115,11 +115,14 @@ Register::finish(HttpRequestPtr req,
     auto session = req->session();
     auto dbPtr = app().getDbClient("");
     auto sqlResultUserCount =
-        co_await dbPtr->execSqlCoro("SELECT COUNT(username) FROM "
-                                    "webauthn.credential WHERE username=?",
+        co_await dbPtr->execSqlCoro("SELECT COUNT(username),id FROM "
+                                    "webauthn.resource_owner WHERE username=?",
                                     name);
+    auto isRegistered = false;
     // Check if the username is registered and the user is not logged in
     if (sqlResultUserCount[0][0].as<size_t>() > 0) {
+      LOG_DEBUG
+          << "The user is already registered. Check if the user is logged in.";
       // Check if there is an active user session
       if (session->find("token")) {
         // Check the user session
@@ -130,6 +133,8 @@ Register::finish(HttpRequestPtr req,
           throw std::invalid_argument{
               "You can't add a credential for another account"};
         }
+        LOG_DEBUG << "The user is logged in. Adding another credential.";
+        isRegistered = true;
       } else {
         LOG_INFO << "The username " << name << " is already registered ";
         throw std::invalid_argument{"User already registered"};
@@ -155,27 +160,53 @@ Register::finish(HttpRequestPtr req,
     // the user account that was denoted in options.user,
     auto publicKeyPtr =
         static_pointer_cast<PublicKeyEC2>(credentialRecord->publicKey);
-    auto sqlResultPbKey = co_await dbPtr->execSqlCoro(
-        "INSERT INTO webauthn.public_key (kty, alg, crv, x, "
-        "y) VALUES(?,?,?,?,?)",
+
+    // Insert resource owner(User account) if not already registered
+    auto resourceOwnerId = 0;
+    if (!isRegistered) {
+      auto sqlResultResourceOwner = co_await dbPtr->execSqlCoro(
+          "INSERT INTO webauthn.resource_owner (username) VALUES(?)", name);
+
+      if (sqlResultResourceOwner.affectedRows() == 0) {
+        LOG_ERROR << "Couldn't insert the resource owner(User account)";
+        std::runtime_error{"Internal server error"};
+      }
+      resourceOwnerId = sqlResultResourceOwner.insertId();
+    } else {
+      resourceOwnerId = sqlResultUserCount[0]["id"].as<size_t>();
+    }
+
+    // Insert the credential
+    auto sqlResultCredential = co_await dbPtr->execSqlCoro(
+        "INSERT INTO webauthn.credential (fk_resource_owner_id, credential_id, "
+        "credential_type, credential_signcount, be, bs, kty, alg, crv, x, y) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        resourceOwnerId, *credentialRecord->id, credentialRecord->type,
+        credentialRecord->signCount, credentialRecord->be, credentialRecord->bs,
         credentialRecord->publicKey->kty, credentialRecord->publicKey->alg,
         publicKeyPtr->crv, publicKeyPtr->x, publicKeyPtr->y);
 
-    if (sqlResultPbKey.affectedRows() == 0) {
-      LOG_ERROR << "Couldn't insert the public key";
-      std::runtime_error{"Internal server error"};
-    }
+    /*    auto sqlResultPbKey = co_await dbPtr->execSqlCoro(
+            "INSERT INTO webauthn.public_key (kty, alg, crv, x, "
+            "y) VALUES(?,?,?,?,?)",
+            credentialRecord->publicKey->kty, credentialRecord->publicKey->alg,
+            publicKeyPtr->crv, publicKeyPtr->x, publicKeyPtr->y);
 
-    auto sqlResultCredential = co_await dbPtr->execSqlCoro(
-        "INSERT INTO webauthn.credential (username, credential_id, "
-        "credential_type, credential_signcount, be, bs, fk_public_key) "
-        "VALUES(?,?,?,?,?,?,?)",
-        name, *credentialRecord->id, credentialRecord->type,
-        credentialRecord->signCount, credentialRecord->be, credentialRecord->bs,
-        sqlResultPbKey.insertId());
+        if (sqlResultPbKey.affectedRows() == 0) {
+          LOG_ERROR << "Couldn't insert the public key";
+          std::runtime_error{"Internal server error"};
+        }
 
-    if (sqlResultPbKey.affectedRows() == 0) {
-      LOG_ERROR << "Couldn't insert the user credential";
+        auto sqlResultCredential = co_await dbPtr->execSqlCoro(
+            "INSERT INTO webauthn.credential (username, credential_id, "
+            "credential_type, credential_signcount, be, bs, fk_public_key) "
+            "VALUES(?,?,?,?,?,?,?)",
+            name, *credentialRecord->id, credentialRecord->type,
+            credentialRecord->signCount, credentialRecord->be,
+       credentialRecord->bs, sqlResultPbKey.insertId());
+    */
+    if (sqlResultCredential.affectedRows() == 0) {
+      LOG_ERROR << "Couldn't insert the credential";
       std::runtime_error{"Internal server error"};
     }
 

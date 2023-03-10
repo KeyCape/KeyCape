@@ -16,10 +16,15 @@ Login::begin(HttpRequestPtr req,
     // Receive user credentials from database
     LOG_DEBUG << "Searching user credentials for user " << name;
     auto sqlResultUserCredential = co_await dbPtr->execSqlCoro(
+        "SELECT credential_id, credential_type, credential_signcount, be, bs "
+        "FROM webauthn.credential WHERE fk_resource_owner_id=(SELECT id FROM "
+        "webauthn.resource_owner WHERE username=?)",
+        name);
+    /*auto sqlResultUserCredential = co_await dbPtr->execSqlCoro(
         "SELECT username, credential_id, credential_type, "
         "credential_signcount, "
         "be, bs FROM webauthn.credential WHERE username=?",
-        name);
+        name);*/
     if (sqlResultUserCredential.size() == 0) {
       LOG_INFO << "No credentials found for the username: " << name;
       throw std::invalid_argument{"No credentials found"};
@@ -113,12 +118,18 @@ Login::finish(HttpRequestPtr req,
     // Pull user credentials from the database
     auto dbPtr = app().getDbClient("");
     auto sqlResultUserCredentialList = co_await dbPtr->execSqlCoro(
+        "SELECT credential_id, credential_type, "
+        "credential_signcount, be, bs, kty, alg, crv, x, y, n, e "
+        "FROM webauthn.credential WHERE fk_resource_owner_id=(SELECT id FROM "
+        "webauthn.resource_owner WHERE username=?)",
+        name.c_str());
+    /*auto sqlResultUserCredentialList = co_await dbPtr->execSqlCoro(
         "SELECT c.username, c.credential_id, c.credential_type, "
         "c.credential_signcount, c.be, c.bs, p.kty, p.alg, p.crv, p.x, p.y, "
         "p.n, "
         "p.e FROM credential AS c INNER JOIN public_key AS p ON "
         "c.fk_public_key=p.id WHERE c.username=?",
-        name.c_str());
+        name.c_str());*/
     LOG_DEBUG << "Rows selected: " << sqlResultUserCredentialList.size();
 
     if (sqlResultUserCredentialList.size() < 1) {
@@ -132,11 +143,11 @@ Login::finish(HttpRequestPtr req,
     auto credRec = std::make_shared<std::forward_list<CredentialRecord>>();
     for (auto row : sqlResultUserCredentialList) {
       CredentialRecord tmpCred;
-      tmpCred.uName = std::make_shared<std::string>(row[0].as<std::string>());
+      tmpCred.uName = std::make_shared<std::string>(name);
       tmpCred.id = std::make_shared<std::string>(drogon::utils::base64Encode(
-          (const unsigned char *)row[1].c_str(), row[1].length(), true));
+          (const unsigned char *)row["credential_id"].c_str(), row["credential_id"].length(), true));
       Base64Url::encode(tmpCred.id);
-      switch (row[2].as<uint32_t>()) {
+      switch (row["credential_type"].as<uint32_t>()) {
       case PublicKeyCredentialType::public_key:
         tmpCred.type = PublicKeyCredentialType::public_key;
         break;
@@ -146,26 +157,26 @@ Login::finish(HttpRequestPtr req,
             toError(drogon::HttpStatusCode::k400BadRequest, "User not found"));
         co_return;
       }
-      tmpCred.signCount = row[3].as<uint32_t>();
-      tmpCred.be = row[4].as<bool>();
-      tmpCred.bs = row[5].as<bool>();
+      tmpCred.signCount = row["credential_signcount"].as<uint32_t>();
+      tmpCred.be = row["be"].as<bool>();
+      tmpCred.bs = row["bs"].as<bool>();
 
-      auto coseKeyType = row[6].as<int>();
+      auto coseKeyType = row["kty"].as<int>();
       switch (coseKeyType) {
       case COSEKeyType::EC2: {
         LOG_INFO << "Found EC2 public key";
         auto tmpPKey = std::make_shared<PublicKeyEC2>();
-        tmpPKey->crv = row[8].as<int>();
-        tmpPKey->x = row[9].as<std::vector<char>>();
-        tmpPKey->y = row[10].as<std::vector<char>>();
+        tmpPKey->crv = row["crv"].as<int>();
+        tmpPKey->x = row["x"].as<std::vector<char>>();
+        tmpPKey->y = row["y"].as<std::vector<char>>();
         tmpCred.publicKey = std::move(tmpPKey);
         break;
       }
       case COSEKeyType::RSA: {
         LOG_INFO << "Found RSA public key";
         auto tmpPKey = std::make_shared<PublicKeyRSA>();
-        tmpPKey->n = row[11].as<std::vector<char>>();
-        tmpPKey->e = row[12].as<std::vector<char>>();
+        tmpPKey->n = row["n"].as<std::vector<char>>();
+        tmpPKey->e = row["e"].as<std::vector<char>>();
         tmpCred.publicKey = std::move(tmpPKey);
         break;
       }
@@ -176,7 +187,7 @@ Login::finish(HttpRequestPtr req,
                          "Found database entry with invalid key type"));
         co_return;
       }
-      auto algorithm = row[7].as<int>();
+      auto algorithm = row["alg"].as<int>();
       switch (algorithm) {
       case COSEAlgorithmIdentifier::ES256:
         LOG_INFO << "Using algorithm ES256";

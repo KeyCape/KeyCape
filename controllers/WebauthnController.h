@@ -37,7 +37,7 @@ template <typename T> WebauthnController<T>::WebauthnController() {
     // Set Policy
     policy = std::make_shared<Policy>();
     policy->userVerification = std::make_shared<UserVerificationRequirement>(
-        UserVerificationRequirement::required);
+        UserVerificationRequirement::preferred);
     policy->attestation = std::make_shared<AttestationConveyancePreference>(
         AttestationConveyancePreference::indirect);
     policy->attStmtFmts = std::make_shared<
