@@ -1,19 +1,16 @@
 version: '3'
 services:
   relying-party:
-   image: docker.ogkw.de/master-thesis/relying-party:nvim
+   image: docker.ogkw.de/master-thesis/relying-party:latest
    container_name: 'relying-party'
    stdin_open: true
    tty: true
    ports:
      - 80:80
-   command: zsh
    restart: always
    environment:
     WEBAUTHN_RP_ID: localhost
     WEBAUTHN_RP_NAME: localhost
-   volumes:
-    - ./server:/server
   db:
    image: mariadb
    container_name: db
