@@ -88,14 +88,13 @@
                                 clientDataJSON: bufferEncode(clientDataJSON),
                             },
                         }),
-                        complete: function(data) {
-                            return data;
+                        error: function(xhr, err) {
+                            alert("Registration failed: " + xhr.responseText + "!")
+                        },
+                        success: function(data, status, xhr) {
+                            alert("Registration successful")
                         }
                     })
-                })
-                .then((success) => {
-                    alert("successfully registered " + username + "!")
-                    return
                 })
                 .catch((error) => {
                     console.log(error)
