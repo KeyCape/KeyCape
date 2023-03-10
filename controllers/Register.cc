@@ -16,7 +16,7 @@ Register::begin(const HttpRequestPtr req,
 
     // Check if the username which has to be unique has been provided
     if (name.empty()) {
-      LOG_INFO << "The username mus NOT be empty";
+      LOG_INFO << "The username must NOT be empty";
       callback(toError(drogon::HttpStatusCode::k400BadRequest,
                        "The username is invalid"));
       co_return;
@@ -105,18 +105,54 @@ Register::finish(HttpRequestPtr req,
     std::shared_ptr<PublicKeyCredentialCreationOptions> options =
         PublicKeyCredentialCreationOptions::fromJson(root);
     auto jsonObj = req->jsonObject();
-    this->webauthn.finishRegistration(options, req->getJsonObject());
+    auto credentialRecord =
+        this->webauthn.finishRegistration(options, req->getJsonObject());
 
     // §7.1.24 Verify that the credentialId is not yet registered for any user.
     // If the credentialId is already known then the Relying Party SHOULD fail
     // this registration ceremony.
+    auto dbPtr = app().getDbClient("db");
+    auto sqlResultUserCount = co_await dbPtr->execSqlCoro(
+        "SELECT COUNT(username) FROM webauthn.credential WHERE username=?",
+        name);
+    if (sqlResultUserCount[0][0].as<size_t>() > 0) {
+      LOG_INFO << "The username " << name << " already exists";
+      throw std::invalid_argument{"User already registered"};
+    }
 
     // §7.1.25 If the attestation statement attStmt verified successfully and is
     // found to be trustworthy, then create and store a new credential record in
     // the user account that was denoted in options.user,
+    auto publicKeyPtr =
+        static_pointer_cast<PublicKeyEC2>(credentialRecord->publicKey);
+    auto sqlResultPbKey = co_await dbPtr->execSqlCoro(
+        "INSERT INTO webauthn.public_key (kty, alg, crv, x, "
+        "y) VALUES(?,?,?,?,?)",
+        credentialRecord->publicKey->kty, credentialRecord->publicKey->alg,
+        publicKeyPtr->crv, publicKeyPtr->x, publicKeyPtr->y);
+
+    if (sqlResultPbKey.affectedRows() == 0) {
+      LOG_ERROR << "Couldn't insert the public key";
+      std::runtime_error{"Internal server error"};
+    }
+
+    auto sqlResultCredential = co_await dbPtr->execSqlCoro(
+        "INSERT INTO webauthn.credential (username, credential_id, "
+        "credential_type, credential_signcount, be, bs, fk_public_key) "
+        "VALUES(?,?,?,?,?,?,?)",
+        name, *credentialRecord->id, credentialRecord->type,
+        credentialRecord->signCount, credentialRecord->be, credentialRecord->bs,
+        sqlResultPbKey.insertId());
+
+    if (sqlResultPbKey.affectedRows() == 0) {
+      LOG_ERROR << "Couldn't insert the user credential";
+      std::runtime_error{"Internal server error"};
+    }
 
     callback(drogon::HttpResponse::newHttpResponse());
-
+  } catch (std::invalid_argument &ex) {
+    LOG_INFO << "An exception occured: " << ex.what();
+    callback(toError(drogon::HttpStatusCode::k400BadRequest, ex.what()));
   } catch (const std::exception &ex) {
     LOG_ERROR << "An exception occured: " << ex.what();
     callback(toError(drogon::HttpStatusCode::k500InternalServerError,
