@@ -1,9 +1,8 @@
-FROM  mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-22.04
+FROM ubuntu:22.04 
 
-WORKDIR /setup
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update \
-	&& apt install -y libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev libmariadb-dev clang-12 clangd-12 zsh cmake make doxygen git curl gcc-12 libhiredis-dev libgoogle-glog-dev python3-pip \
+	&& apt install -y libjsoncpp-dev uuid-dev libssl-dev zlib1g-dev libmariadb-dev cmake make git gcc-12 libhiredis-dev libgoogle-glog-dev python3-pip \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install jsonschema
@@ -16,6 +15,5 @@ RUN git clone https://github.com/drogonframework/drogon \
 	&& mkdir build \
 	&& cd build \
 	&& cmake -DCMAKE_CXX_STANDARD=20 .. \
-	&& make && make install
-
-WORKDIR /server
+	&& make -j4 && make install
+RUN rm -rf /drogon

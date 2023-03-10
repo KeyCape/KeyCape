@@ -1,53 +1,50 @@
+---
 kind: pipeline
 type: docker
-name: default 
+name: build docker image 
 
 steps:
-- name: submodules
+- name: pull submodules
   image: alpine/git
   commands:
     - git submodule update --init --recursive
-- name: build docker dev image
-  image: plugins/docker
-  environment:
-    GIT_TOKEN:
-      from_secret: GIT_TOKEN
+- name: build relying-party 
+  image: docker.ogkw.de/master-thesis/relying-party:buildenv
+  commands:
+    - mkdir -p build
+    - cd build
+    - cmake ..
+    - cmake --build . --config Debug --target relying-party
+- name: build docker image
+  image: ubuntu:22.04
   settings:
     repo: docker.ogkw.de/master-thesis/relying-party
     registry: docker.ogkw.de
     tags: latest
-    dockerfile: .docker/Dockerfile.dev
+    dockerfile: .docker/Dockerfile
     purge: true
-    build_args_from_env:
-      - GIT_TOKEN
-- name: build docker test image
+trigger:
+ event:
+  - push
+ branch:
+  - master
+
+---
+kind: pipeline
+type: docker
+name: build docker buildenv image
+
+steps:
+- name: build buildenv image
   image: plugins/docker
-  environment:
-    GIT_TOKEN:
-      from_secret: GIT_TOKEN
   settings:
     repo: docker.ogkw.de/master-thesis/relying-party
     registry: docker.ogkw.de
-    tags: test
-    dockerfile: .docker/Dockerfile.build
+    tags: buildenv
+    dockerfile: .docker/Dockerfile.buildenv
     purge: true
-    build_args_from_env:
-      - GIT_TOKEN
-- name: build docker nvim image
-  image: plugins/docker
-  environment:
-    GIT_TOKEN:
-      from_secret: GIT_TOKEN
-  settings:
-    repo: docker.ogkw.de/master-thesis/relying-party
-    registry: docker.ogkw.de
-    tags: nvim
-    dockerfile: .docker/Dockerfile.nvim
-    purge: true
-    build_args_from_env:
-      - GIT_TOKEN
 trigger:
  event:
   - custom
  branch:
-   - master
+  - master
