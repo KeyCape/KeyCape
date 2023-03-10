@@ -242,13 +242,13 @@ Login::finish(HttpRequestPtr req,
         credRecIt->signCount, credRecIt->bs,
         drogon::utils::base64Decode(*credRecIt->id));
     LOG_DEBUG << "Rows updated: " << sqlResultCredentialUpdate.affectedRows();
-    if (sqlResultCredentialUpdate.affectedRows() <= 0) {
+    /*if (sqlResultCredentialUpdate.affectedRows() <= 0) {
       LOG_ERROR
           << "Couldn't update the credentials signature count and backup state";
       callback(toError(drogon::HttpStatusCode::k500InternalServerError,
                        "An internal server error occured"));
       co_return;
-    }
+    }*/
     LOG_INFO << "User " << *credRecIt->uName << " logged in";
 
     // Set session token
