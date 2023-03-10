@@ -95,7 +95,7 @@ Register::finish(HttpRequestPtr req,
       co_return;
     }
     std::string optionsJson{redisRes.asString()};
-    LOG_INFO << "Redis: Found entry: " << optionsJson.c_str();
+    LOG_DEBUG << "Redis: Found entry: " << optionsJson.c_str();
 
     LOG_DEBUG << "Deserialize database entry...";
     std::shared_ptr<Json::Value> root = std::make_shared<Json::Value>();
