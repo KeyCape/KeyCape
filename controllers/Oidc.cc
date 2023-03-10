@@ -83,7 +83,19 @@ Oidc::authorize(HttpRequestPtr req,
     }
 
     // The scope has to be openid
-    if (scope != "openid") {
+    LOG_DEBUG << "Verify that the scope openid is set";
+    auto regexScope = std::regex{" "};
+    bool foundScopeOpenId = false;
+    std::sregex_token_iterator regIt{scope.begin(), scope.end(), regexScope,
+                                     -1};
+    for (auto end = std::sregex_token_iterator{}; regIt != end; regIt++) {
+      LOG_DEBUG << "Scope found: " << *regIt;
+      if (*regIt == "openid") {
+        foundScopeOpenId = true;
+        break;
+      }
+    }
+    if (!foundScopeOpenId) {
       LOG_ERROR << "The scope has to contain the string openid.";
       throw std::invalid_argument{
           "The scope has to contain the string openid."};
