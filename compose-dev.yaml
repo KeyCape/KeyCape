@@ -9,9 +9,14 @@ services:
      - 80:80
    command: zsh
    user: 'vscode:1000'
+   restart: always
   db:
    image: mariadb
    container_name: db
    restart: always
    environment: 
     MARIADB_ROOT_PASSWORD: dev
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
