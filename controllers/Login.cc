@@ -250,6 +250,18 @@ Login::finish(HttpRequestPtr req,
       co_return;
     }
     LOG_INFO << "User " << *credRecIt->uName << " logged in";
+
+    // Set session token
+    LOG_INFO << "Set session token";
+    auto sessionPtr = req->session();
+    if (sessionPtr->find("token")) {
+      LOG_DEBUG << "Token already set. Modifying token";
+      sessionPtr->modify<CredentialRecord>(
+          "token", [credRecIt](CredentialRecord &rec) { rec = *credRecIt; });
+    } else {
+      sessionPtr->insert("token", *credRecIt);
+    }
+
     callback(drogon::HttpResponse::newHttpResponse());
   } catch (std::invalid_argument &ex) {
     LOG_INFO << "An exception occured: " << ex.what();
@@ -259,5 +271,14 @@ Login::finish(HttpRequestPtr req,
     callback(toError(drogon::HttpStatusCode::k500InternalServerError,
                      "Internal server error"));
   }
+  co_return;
+}
+drogon::AsyncTask
+Login::status(HttpRequestPtr req,
+              std::function<void(const HttpResponsePtr &)> callback) {
+  (req->session()->find("token")
+       ? callback(drogon::HttpResponse::newHttpResponse())
+       : callback(toError(drogon::HttpStatusCode::k401Unauthorized,
+                          "You are not logged in")));
   co_return;
 }
