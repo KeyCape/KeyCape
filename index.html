@@ -76,9 +76,10 @@
                     let clientDataJSON = credential.response.clientDataJSON;
                     let rawId = credential.rawId;
 
-                    $.post(
-                        '/register/finish/' + username,
-                        JSON.stringify({
+                    $.ajax({
+                        url: '/register/finish/' + username, 
+                        type: 'POST', contentType: 'application/json', 
+                        data: JSON.stringify({
                             id: credential.id,
                             rawId: bufferEncode(rawId),
                             type: credential.type,
@@ -87,10 +88,10 @@
                                 clientDataJSON: bufferEncode(clientDataJSON),
                             },
                         }),
-                        function (data) {
-                            return data
-                        },
-                        'json')
+                        complete: function(data) {
+                            return data;
+                        }
+                    })
                 })
                 .then((success) => {
                     alert("successfully registered " + username + "!")
