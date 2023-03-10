@@ -231,8 +231,25 @@ Login::finish(HttpRequestPtr req,
     auto jsonReq = req->getJsonObject();
     pKeyCred->fromJson(jsonReq);
 
-    this->webauthn.finishLogin(pKeyCred, pubKeyCredReqOpt, credRec);
+    // Check the request and update the CredentialRecord credRec
+    auto credRecIt =
+        this->webauthn.finishLogin(pKeyCred, pubKeyCredReqOpt, credRec);
 
+    // Update database
+    auto sqlResultCredentialUpdate = co_await dbPtr->execSqlCoro(
+        "UPDATE credential SET credential_signcount=?, bs=? WHERE "
+        "credential_id=?",
+        credRecIt->signCount, credRecIt->bs,
+        drogon::utils::base64Decode(*credRecIt->id));
+    LOG_DEBUG << "Rows updated: " << sqlResultCredentialUpdate.affectedRows();
+    if (sqlResultCredentialUpdate.affectedRows() <= 0) {
+      LOG_ERROR
+          << "Couldn't update the credentials signature count and backup state";
+      callback(toError(drogon::HttpStatusCode::k500InternalServerError,
+                       "An internal server error occured"));
+      co_return;
+    }
+    LOG_INFO << "User " << *credRecIt->uName << " logged in";
     callback(drogon::HttpResponse::newHttpResponse());
   } catch (std::invalid_argument &ex) {
     LOG_INFO << "An exception occured: " << ex.what();
