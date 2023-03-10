@@ -55,7 +55,7 @@ Register::begin(const HttpRequestPtr req,
       auto redisClient = app().getRedisClient();
 
       co_await redisClient->execCommandCoro(
-          "set registration:%s %s", name.c_str(), strJsonResponse.c_str());
+          "set registration:%s %s EX 20", name.c_str(), strJsonResponse.c_str());
 
       LOG_DEBUG << "Response " << strJsonResponse;
       callback(drogon::HttpResponse::newHttpJsonResponse(*jsonPubKeyCredOpt));
