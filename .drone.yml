@@ -16,7 +16,7 @@ steps:
     - cmake ..
     - cmake --build . --config Debug --target relying-party
 - name: build docker image
-  image: ubuntu:22.04
+  image: plugins/docker
   settings:
     repo: docker.ogkw.de/master-thesis/relying-party
     registry: docker.ogkw.de
