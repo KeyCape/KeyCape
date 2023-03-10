@@ -20,6 +20,17 @@
             "filename": ""
         }
     ],
+    "redis_clients": [
+        {
+            "host": "127.0.0.1",
+            "port": 6379,
+            "passwd": "",
+            "db": 0,
+            "is_fast": false,
+            "number_of_connections": 1,
+            "timeout": -1.0
+        }
+    ],
     "app": {
         "number_of_threads": 1,
         "enable_session": false,
