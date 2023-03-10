@@ -1,12 +1,17 @@
 version: '3'
 services:
   relying-party:
+   build:
+     context: .docker
+     dockerfile: Dockerfile.dev
    image: docker.ogkw.de/master-thesis/relying-party
    container_name: 'relying-party'
    stdin_open: true
    tty: true
    ports:
      - 80:80
+   command: zsh
+   user: 'vscode:1000'
    restart: always
   rp_db:
    image: mariadb
