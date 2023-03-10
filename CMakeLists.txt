@@ -5,7 +5,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/index.html ${CMAKE_CURRENT_BINARY_DIR}/index.html COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/static/index.html ${CMAKE_CURRENT_BINARY_DIR}/static/index.html COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/static/clientRegister.html ${CMAKE_CURRENT_BINARY_DIR}/static/clientRegister.html COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_BINARY_DIR}/config.json COPYONLY)
 
 add_custom_target(
@@ -16,6 +17,14 @@ add_custom_target(
 )
 
 add_subdirectory(lib/libwebauthn-cpp)
+
+include(FetchContent)
+FetchContent_Declare(
+  jwt-cpp
+  GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
+  GIT_TAG        v0.6.0
+)
+FetchContent_MakeAvailable(jwt-cpp)
 
 include(CheckIncludeFileCXX)
 
@@ -45,7 +54,7 @@ add_executable(${PROJECT_NAME} main.cc)
 #
 # and comment out the following lines
 find_package(Drogon CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon webauthn)
+target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon webauthn jwt-cpp)
 # ##############################################################################
 
 if (CMAKE_CXX_STANDARD LESS 17)
@@ -64,12 +73,14 @@ aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
+aux_source_directory(database DB_SRC)
+aux_source_directory(lib/oidc OIDC_SRC)
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
 # use the following line to create views with namespaces.
-# drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
-#                     ${CMAKE_CURRENT_BINARY_DIR} TRUE)
+ drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
+                     ${CMAKE_CURRENT_BINARY_DIR} TRUE)
 # use the following line to create views with namespace CHANGE_ME prefixed
 # and path namespaces.
 # drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
@@ -78,7 +89,9 @@ drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 target_include_directories(${PROJECT_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                    ${CMAKE_CURRENT_SOURCE_DIR}/models
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/controllers)
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/controllers
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/database
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/lib/oidc)
 target_sources(${PROJECT_NAME}
                PRIVATE
                ${HELPER_SRC}
@@ -86,7 +99,9 @@ target_sources(${PROJECT_NAME}
                ${CTL_SRC}
                ${FILTER_SRC}
                ${PLUGIN_SRC}
-               ${MODEL_SRC})
+               ${MODEL_SRC}
+               ${DB_SRC}
+               ${OIDC_SRC})
 # ##############################################################################
 # uncomment the following line for dynamically loading views 
 # set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
