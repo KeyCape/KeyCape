@@ -3,7 +3,22 @@ services:
   relying-party:
    image: docker.ogkw.de/master-thesis/relying-party
    container_name: 'relying-party'
-   volumes:
-     - ./:/server
+   stdin_open: true
+   tty: true
    ports:
      - 80:80
+   command: zsh
+   user: 'vscode:1000'
+   restart: always
+  db:
+   image: mariadb
+   container_name: db
+   restart: always
+   environment: 
+    MARIADB_ROOT_PASSWORD: dev
+   volumes:
+    - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
