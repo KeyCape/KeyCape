@@ -1,11 +1,14 @@
 #pragma once
 
 #include <drogon/HttpController.h>
+#include <webauthn.h>
 
 using namespace drogon;
 
 class Register : public drogon::HttpController<Register>
 {
+  private:
+  Webauthn webauthn;
   public:
     METHOD_LIST_BEGIN
     METHOD_ADD(Register::begin, "/begin/{name}", Get);
