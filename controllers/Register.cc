@@ -128,16 +128,45 @@ Register::finish(HttpRequestPtr req,
     auto credentialRecord =
         this->webauthn.finishRegistration(options, req->getJsonObject());
 
+    // Verify that the user isn't already registered. And if, then the user must
+    // be logged in.
+    LOG_DEBUG << "Verify that the user isn't already registered";
+    auto session = req->session();
+    auto dbPtr = app().getDbClient("");
+    auto sqlResultUserCount =
+        co_await dbPtr->execSqlCoro("SELECT COUNT(username) FROM "
+                                    "webauthn.credential WHERE username=?",
+                                    name);
+    // Check if the username is registered and the user is not logged in
+    if (sqlResultUserCount[0][0].as<size_t>() > 0) {
+      // Check if there is an active user session
+      if (session->find("token")) {
+        // Check the user session
+        auto sessionToken = session->get<CredentialRecord>("token");
+        if (*sessionToken.uName != name) {
+          LOG_INFO << "The sessions username is: " << *sessionToken.uName
+                   << ". But should be: " << name;
+          throw std::invalid_argument{
+              "You can't add a credential for another account"};
+        }
+      } else {
+        LOG_INFO << "The username " << name << " is already registered ";
+        throw std::invalid_argument{"User already registered"};
+      }
+    }
+
     // §7.1.24 Verify that the credentialId is not yet registered for any user.
     // If the credentialId is already known then the Relying Party SHOULD fail
     // this registration ceremony.
-    auto dbPtr = app().getDbClient("");
-    auto sqlResultUserCount = co_await dbPtr->execSqlCoro(
-        "SELECT COUNT(username) FROM webauthn.credential WHERE username=?",
-        name);
-    if (sqlResultUserCount[0][0].as<size_t>() > 0) {
-      LOG_INFO << "The username " << name << " already exists";
-      throw std::invalid_argument{"User already registered"};
+    auto sqlResultCredentialCount =
+        co_await dbPtr->execSqlCoro("SELECT COUNT(credential_id) FROM "
+                                    "webauthn.credential WHERE credential_id=?",
+                                    *credentialRecord->id);
+    if (sqlResultCredentialCount[0][0].as<size_t>() > 0) {
+      LOG_INFO << "A credential with the id: " << *credentialRecord->id
+               << " is already registered";
+      throw std::invalid_argument{
+          "Credential already registered. To register you have to login first"};
     }
 
     // §7.1.25 If the attestation statement attStmt verified successfully and is
