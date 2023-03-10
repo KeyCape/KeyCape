@@ -14,16 +14,15 @@ Oidc::Oidc() {
     this->iss = std::make_shared<std::string>("localhost");
   }
 
-  this->ecPubkey = std::make_shared<std::string>(R"(-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAqE4E1vyDBhVDGhq2Ct28fo7nPws
-thd6xOd3wod/5qmGp0QRmS7WSu5ZFVKu5brNuMYmAOK90b6pFo6iPI6rDg==
------END PUBLIC KEY-----)");
   this->ecPrivkey =
       std::make_shared<std::string>(R"(-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIJ2XhRDvM3llbYS2dRIfw3Lt2xCFa9hMMfvESXwyRF52oAoGCCqGSM49
 AwEHoUQDQgAEAqE4E1vyDBhVDGhq2Ct28fo7nPwsthd6xOd3wod/5qmGp0QRmS7W
 Su5ZFVKu5brNuMYmAOK90b6pFo6iPI6rDg==
 -----END EC PRIVATE KEY-----)");
+
+  this->x509Cert = std::make_shared<std::string>("MIIB3zCCAYWgAwIBAgIUVg3qhnOHSyACIxat2zFOqvGVMWQwCgYIKoZIzj0EAwIwRTELMAkGA1UEBhMCREUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMzAyMDcwODU1MTRaFw0yNDAyMDcwODU1MTRaMEUxCzAJBgNVBAYTAkRFMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARZir/jLr+sLsWKJqhNRlXX1ZBvKELIJTsuzK+8Nz4Ot93lj0yIhXf50kTtEcwJjLv6fEDAP58/iuYWUk0JgSHro1MwUTAdBgNVHQ4EFgQUDjALys3Cetafk0RxBPdQWX+ljxwwHwYDVR0jBBgwFoAUDjALys3Cetafk0RxBPdQWX+ljxwwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiBpyVXRkWSYwpBIKYhCK9bDgmPQNI1LSGurICCBdZXFYAIhANa6AqedlMdCZvBNv1hYovbpS28BlAioiFYvRFawi74O");
+  this->ecPubkey = std::make_shared<std::string>(jwt::helper::extract_pubkey_from_cert(std::string{"-----BEGIN CERTIFICATE-----\n"}.append(*this->x509Cert).append("\n-----END CERTIFICATE-----")));
 }
 
 /**
@@ -489,6 +488,26 @@ Oidc::token(HttpRequestPtr req,
   co_return;
 }
 
+drogon::AsyncTask
+Oidc::keys(HttpRequestPtr req,
+           std::function<void(const HttpResponsePtr &)> callback) {
+  LOG_DEBUG << "Request on " << req->getPath() << " from "
+            << req->getPeerAddr().toIp();
+
+  Json::Value root, key1;
+  Json::Value certs{Json::ValueType::arrayValue},
+      keys{Json::ValueType::arrayValue};
+  certs.append(*this->x509Cert);
+  key1["alg"] = "PS256";
+  key1["kty"] = "EC";
+  key1["use"] = "sig";
+  key1["x5c"] = std::move(certs); 
+  keys.append(std::move(key1));
+  root["keys"] = std::move(keys);
+
+  callback(HttpResponse::newHttpJsonResponse(std::move(root)));
+  co_return;
+}
 drogon::AsyncTask
 Oidc::userinfo(HttpRequestPtr req,
                std::function<void(const HttpResponsePtr &)> callback) {

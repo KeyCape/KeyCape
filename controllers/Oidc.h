@@ -14,6 +14,7 @@ private:
   std::shared_ptr<std::string> iss; // Issuer Identifier
   std::shared_ptr<std::string> ecPubkey;
   std::shared_ptr<std::string> ecPrivkey;
+  std::shared_ptr<std::string> x509Cert;
 
   static auto generateResponseAuhtorizationCode(size_t &client_id,
                                                 std::string &redirect_uri,
@@ -44,6 +45,7 @@ public:
              Post);
   METHOD_ADD(Oidc::userinfo, "userinfo", Post);
   METHOD_ADD(Oidc::userinfo, "userinfo", Get);
+  METHOD_ADD(Oidc::keys, "keys", Get);
   METHOD_LIST_END
 
   Oidc();
@@ -106,6 +108,9 @@ public:
   drogon::AsyncTask
   userinfo(HttpRequestPtr req,
            std::function<void(const HttpResponsePtr &)> callback);
+
+  drogon::AsyncTask keys(HttpRequestPtr req,
+                         std::function<void(const HttpResponsePtr &)> callback);
 
   drogon::AsyncTask
   clientRegister(HttpRequestPtr req,
