@@ -7,4 +7,4 @@ RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /server
 RUN chmod 770 relying-party 
-ENTRYPOINT [ "relying-party" ]
+ENTRYPOINT [ "./relying-party" ]
