@@ -2,6 +2,7 @@
 
 #include <drogon/HttpController.h>
 #include <webauthn.h>
+#include "helper/response.h"
 
 using namespace drogon;
 
@@ -25,5 +26,5 @@ class Register : public drogon::HttpController<Register>
     // void your_method_name(const HttpRequestPtr& req, std::function<void (const HttpResponsePtr &)> &&callback, double p1, int p2) const;
 
     drogon::AsyncTask begin(HttpRequestPtr req, std::function<void (const HttpResponsePtr &)> callback, std::string name);
-    drogon::AsyncTaskfinish(const HttpRequestPtr &req, std::function<void (const HttpResponsePtr &)> &&callback, std::string &&name);
+    drogon::AsyncTask finish(HttpRequestPtr req, std::function<void (const HttpResponsePtr &)> callback, std::string name);
 };

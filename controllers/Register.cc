@@ -16,10 +16,10 @@ Register::begin(const HttpRequestPtr req,
 
     // Check if the username which has to be unique has been provided
     if (name.empty()) {
-      resp = drogon::HttpResponse::newHttpResponse();
-      resp->setBody("The username must NOT be empty");
-      resp->setStatusCode(HttpStatusCode::k400BadRequest);
-      callback(resp);
+      LOG_INFO << "The username mus NOT be empty";
+      callback(toError(drogon::HttpStatusCode::k400BadRequest,
+                       "The username is invalid"));
+      co_return;
     } else {
       // PublicKeyCredentialCreationOptions as json
       auto jsonPubKeyCredOpt =
@@ -40,19 +40,44 @@ Register::begin(const HttpRequestPtr req,
     }
 
   } catch (const std::exception &ex) {
-    LOG_ERROR << "Redis client couldn't save the temporary registration data: "
-              << ex.what();
-    auto resPtr = drogon::HttpResponse::newHttpResponse();
-    resPtr->setStatusCode(HttpStatusCode::k500InternalServerError);
-    resPtr->setBody("Internal database error");
-    callback(resPtr);
+    LOG_ERROR << "An exception occured: " << ex.what();
+    callback(toError(drogon::HttpStatusCode::k500InternalServerError,
+                     "Internal server error"));
   }
   co_return;
 }
 
-drogon::AsyncTask Register::finish(const HttpRequestPtr &req,
-                      std::function<void(const HttpResponsePtr &)> &&callback,
-                      std::string &&name) {
+drogon::AsyncTask
+Register::finish(HttpRequestPtr req,
+                 std::function<void(const HttpResponsePtr &)> callback,
+                 std::string name) {
   LOG_DEBUG << "Request on " << req->getPath() << " from "
             << req->getPeerAddr().toIp() << " with body " << req->getBody();
+  try {
+    if (name.empty()) {
+      LOG_INFO << "The username mus NOT be empty";
+      callback(toError(drogon::HttpStatusCode::k400BadRequest,
+                       "The username is invalid"));
+      co_return;
+    }
+    auto redisClient = app().getRedisClient();
+    auto redisRes = co_await redisClient->execCommandCoro("get registration:%s",
+                                                          name.c_str());
+
+    if (redisRes.type() == nosql::RedisResultType::kNil) {
+      LOG_INFO << "Redis: No entry for the username: " << name << " found";
+      callback(
+          toError(drogon::HttpStatusCode::k400BadRequest,
+                  "Missing redistration data for username " + name +
+                      ". /register/begin must have been called berforehand"));
+      co_return;
+    }
+    LOG_INFO << "Redis: Found entry: " << redisRes.asString();
+
+  } catch (const std::exception &ex) {
+    LOG_ERROR << "An exception occured: " << ex.what();
+    callback(toError(drogon::HttpStatusCode::k500InternalServerError,
+                     "Internal server error"));
+  }
+  co_return;
 }
