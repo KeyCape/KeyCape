@@ -7,18 +7,14 @@ services:
    tty: true
    ports:
      - 80:80
-   command: zsh
-   user: 'vscode:1000'
    restart: always
-  db:
+  rp_db:
    image: mariadb
-   container_name: rp_db
    restart: always
    environment: 
     MARIADB_ROOT_PASSWORD: dev
    volumes:
     - ./docker/mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-  redis:
+  rp_redis:
     image: redis:latest
-    container_name: rp_redis
     restart: always
