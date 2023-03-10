@@ -50,7 +50,7 @@ Register::begin(const HttpRequestPtr req,
   co_return;
 }
 
-void Register::finish(const HttpRequestPtr &req,
+drogon::AsyncTask Register::finish(const HttpRequestPtr &req,
                       std::function<void(const HttpResponsePtr &)> &&callback,
                       std::string &&name) {
   LOG_DEBUG << "Request on " << req->getPath() << " from "
