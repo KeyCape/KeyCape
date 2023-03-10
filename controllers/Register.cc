@@ -80,29 +80,40 @@ Register::finish(HttpRequestPtr req,
     Json::CharReaderBuilder builder;
     std::unique_ptr<Json::CharReader> reader{builder.newCharReader()};
 
-    if (!reader->parse(optionsJson.c_str(), optionsJson.c_str()+ optionsJson.length(), &(*root), nullptr)) {
+    if (!reader->parse(optionsJson.c_str(),
+                       optionsJson.c_str() + optionsJson.length(), &(*root),
+                       nullptr)) {
       LOG_DEBUG << "Couldn't parse the database entry to JSON";
       callback(toError(drogon::HttpStatusCode::k500InternalServerError,
                        "Internal server error"));
       co_return;
     }
 
+    // std::string body = req->body();
+    //  std::shared_ptr<Json::Value> reqJson = std::make_shared<Json::Value>();
+    //  Json::CharReaderBuilder reqBuilder;
+    //  std::unique_ptr<Json::CharReader> reqReader{reqBuilder.newCharReader()};
 
-   //std::string body = req->body();
-   // std::shared_ptr<Json::Value> reqJson = std::make_shared<Json::Value>();
-   // Json::CharReaderBuilder reqBuilder;
-   // std::unique_ptr<Json::CharReader> reqReader{reqBuilder.newCharReader()};
+    // if (!reader->parse(body.c_str(), body.c_str()+ body.length(),
+    // &(*reqJson), nullptr)) {
+    //   LOG_DEBUG << "Couldn't parse the request body to JSON";
+    //   callback(toError(drogon::HttpStatusCode::k500InternalServerError,
+    //                    "Internal server error"));
+    //   co_return;
+    // }
 
-   // if (!reader->parse(body.c_str(), body.c_str()+ body.length(), &(*reqJson), nullptr)) {
-   //   LOG_DEBUG << "Couldn't parse the request body to JSON";
-   //   callback(toError(drogon::HttpStatusCode::k500InternalServerError,
-   //                    "Internal server error"));
-   //   co_return;
-   // }
+    std::shared_ptr<PublicKeyCredentialCreationOptions> options =
+        PublicKeyCredentialCreationOptions::fromJson(root);
+    auto jsonObj = req->jsonObject();
+    this->webauthn.finishRegistration(options, req->getJsonObject());
 
-    std::shared_ptr<PublicKeyCredentialCreationOptions> options = PublicKeyCredentialCreationOptions::fromJson(root);
-   auto jsonObj = req->jsonObject();
-   this->webauthn.finishRegistration(options, req->getJsonObject());
+    // §7.1.24 Verify that the credentialId is not yet registered for any user.
+    // If the credentialId is already known then the Relying Party SHOULD fail
+    // this registration ceremony.
+
+    // §7.1.25 If the attestation statement attStmt verified successfully and is
+    // found to be trustworthy, then create and store a new credential record in
+    // the user account that was denoted in options.user,
 
     callback(drogon::HttpResponse::newHttpResponse());
 
