@@ -33,6 +33,19 @@ steps:
     purge: true
     build_args_from_env:
       - GIT_TOKEN
+- name: build docker nvim image
+  image: plugins/docker
+  environment:
+    GIT_TOKEN:
+      from_secret: GIT_TOKEN
+  settings:
+    repo: docker.ogkw.de/master-thesis/relying-party
+    registry: docker.ogkw.de
+    tags: nvim
+    dockerfile: .docker/Dockerfile.nvim
+    purge: true
+    build_args_from_env:
+      - GIT_TOKEN
 trigger:
  event:
   - custom
