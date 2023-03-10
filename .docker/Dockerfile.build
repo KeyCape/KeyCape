@@ -12,8 +12,6 @@ RUN cmake --build . --config Debug --target relying-party
 FROM docker.ogkw.de/master-thesis/relying-party
 
 WORKDIR /server
-COPY --from=0 /server/build/relying-party ./
-COPY --from=0 /server/build/config.json ./
-COPY --from=0 /server/build/index.html ./
+COPY --from=0 /server/build/ ./
 
 ENTRYPOINT [ "/server/relying-party" ]
