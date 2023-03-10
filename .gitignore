@@ -3,6 +3,7 @@
 
 .clangd/*
 build/*
+doc/*
 
 ### C ###
 # Prerequisites
