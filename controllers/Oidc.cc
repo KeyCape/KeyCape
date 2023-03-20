@@ -13,16 +13,35 @@ Oidc::Oidc() {
   } else {
     this->iss = std::make_shared<std::string>("localhost");
   }
+  std::filesystem::path fileCert = "cert/domain.crt",
+                        fileKey = "cert/domain.key";
+  LOG(INFO) << "Loading X509 certificate and corresponding private key from "
+               "the files "
+            << fileCert << " and " << fileKey;
 
-  this->ecPrivkey =
-      std::make_shared<std::string>(R"(-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIJ2XhRDvM3llbYS2dRIfw3Lt2xCFa9hMMfvESXwyRF52oAoGCCqGSM49
-AwEHoUQDQgAEAqE4E1vyDBhVDGhq2Ct28fo7nPwsthd6xOd3wod/5qmGp0QRmS7W
-Su5ZFVKu5brNuMYmAOK90b6pFo6iPI6rDg==
------END EC PRIVATE KEY-----)");
+  if (!std::filesystem::exists(fileCert)) {
+    LOG_ERROR << "Missing file " << fileCert;
+    throw std::runtime_error{"Missing certificate file"};
+  }
+  if (!std::filesystem::exists(fileKey)) {
+    LOG_ERROR << "Missing file " << fileKey;
+    throw std::runtime_error{"Missing the private key file"};
+  }
 
-  this->x509Cert = std::make_shared<std::string>("MIIB3zCCAYWgAwIBAgIUVg3qhnOHSyACIxat2zFOqvGVMWQwCgYIKoZIzj0EAwIwRTELMAkGA1UEBhMCREUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMzAyMDcwODU1MTRaFw0yNDAyMDcwODU1MTRaMEUxCzAJBgNVBAYTAkRFMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARZir/jLr+sLsWKJqhNRlXX1ZBvKELIJTsuzK+8Nz4Ot93lj0yIhXf50kTtEcwJjLv6fEDAP58/iuYWUk0JgSHro1MwUTAdBgNVHQ4EFgQUDjALys3Cetafk0RxBPdQWX+ljxwwHwYDVR0jBBgwFoAUDjALys3Cetafk0RxBPdQWX+ljxwwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiBpyVXRkWSYwpBIKYhCK9bDgmPQNI1LSGurICCBdZXFYAIhANa6AqedlMdCZvBNv1hYovbpS28BlAioiFYvRFawi74O");
-  this->ecPubkey = std::make_shared<std::string>(jwt::helper::extract_pubkey_from_cert(std::string{"-----BEGIN CERTIFICATE-----\n"}.append(*this->x509Cert).append("\n-----END CERTIFICATE-----")));
+  std::ifstream fileCertFs{fileCert}, fileKeyFs{fileKey};
+  std::ostringstream strCert, strKey;
+
+  LOG(INFO) << "Reading the cert file";
+  strCert << fileCertFs.rdbuf();
+  LOG(INFO) << "Reading the private key file";
+  strKey << fileKeyFs.rdbuf();
+
+  fileCertFs.close();
+  fileKeyFs.close();
+
+  this->x509Cert = std::make_shared<std::string>(strCert.str());
+  this->privkey = std::make_shared<std::string>(strKey.str());
+  this->pubkey = std::make_shared<std::string>(jwt::helper::extract_pubkey_from_cert(std::string{"-----BEGIN CERTIFICATE-----\n"}.append(*this->x509Cert).append("\n-----END CERTIFICATE-----")));
 }
 
 /**
@@ -63,11 +82,10 @@ Su5ZFVKu5brNuMYmAOK90b6pFo6iPI6rDg==
  * 11 for additional scope values defined by this specification.
  * @return drogon::AsyncTask
  */
-drogon::AsyncTask
-Oidc::authorize(HttpRequestPtr req,
-                std::function<void(const HttpResponsePtr &)> callback,
-                std::string response_type, std::string client_id,
-                std::string redirect_uri, std::string scope) {
+drogon::AsyncTask Oidc::authorize(
+    HttpRequestPtr req, std::function<void(const HttpResponsePtr &)> callback,
+    std::string response_type, std::string client_id, std::string redirect_uri,
+    std::string scope, std::string state) {
   LOG_DEBUG << "Request on " << req->getPath() << " from "
             << req->getPeerAddr().toIp() << " Body: " << req->bodyData()
             << " Method: " << req->getMethodString()
@@ -124,7 +142,8 @@ Oidc::authorize(HttpRequestPtr req,
     // Check if the client_id is registered
     auto dbClient = app().getDbClient("");
     auto sqlResultClient = co_await dbClient->execSqlCoro(
-        "SELECT id,app_name FROM oidc_client as c INNER JOIN oidc_client_uri as u ON "
+        "SELECT id,app_name FROM oidc_client as c INNER JOIN oidc_client_uri "
+        "as u ON "
         "c.id=u.fk_oidc_client_id WHERE c.client_id=? AND u.uri=?",
         client_id, redirect_uri);
 
@@ -159,7 +178,7 @@ Oidc::authorize(HttpRequestPtr req,
     } else if (sqlResultOidcMapping[0]["oidc"].as<bool>()) {
       LOG_DEBUG << "The client has already been granted access to oidc scope";
       auto responsePtr = co_await Oidc::generateResponseAuhtorizationCode(
-          clientId, redirect_uri, resourceOwnerId);
+          clientId, redirect_uri, resourceOwnerId, state);
       callback(responsePtr);
       co_return;
     }
@@ -180,6 +199,12 @@ Oidc::authorize(HttpRequestPtr req,
     authRequest["response_type"] = response_type;
     authRequest["client_id"] = client_id;
     authRequest["redirect_uri"] = redirect_uri;
+    if (!state.empty()) {
+      LOG_DEBUG << "Found parameter status in query. Binding session id to "
+                   "this request";
+      authRequest["state"] = state;
+      authRequest["session_id"] = req->getSession()->sessionId();
+    }
 
     auto builder = Json::StreamWriterBuilder{};
     builder["indentation"] = "";
@@ -253,6 +278,22 @@ Oidc::grant(HttpRequestPtr req,
       throw std::invalid_argument{"Internal server error"};
     }
 
+    std::string state{""};
+    if (authReq->isMember("state")) {
+      LOG_DEBUG << "Field status were passed during /authorize.\nCheck if the "
+                   "sessions match";
+      state = (*authReq)["state"].as<std::string>();
+      if (!authReq->isMember("session_id")) {
+        LOG_ERROR << "Missing session_id. This should never happen";
+        throw std::runtime_error{"Internal server error"};
+      }
+      if ((*authReq)["session_id"].as<std::string>() !=
+          sessionPtr->sessionId()) {
+        LOG_ERROR << "The session ids dosen't match";
+        throw std::invalid_argument{
+            "This session isn't allowed to use that token"};
+      }
+    }
     // Get the resource owners database entry id.
     LOG_DEBUG << "Get the resource owners database entry id";
     auto dbClient = app().getDbClient("");
@@ -306,7 +347,7 @@ Oidc::grant(HttpRequestPtr req,
     // Generate and store Authorization Code.
     auto redirect_uri = (*authReq)["redirect_uri"].as<std::string>();
     auto responsePtr = co_await Oidc::generateResponseAuhtorizationCode(
-        clientId, redirect_uri, resourceOwnerId);
+        clientId, redirect_uri, resourceOwnerId, state);
     callback(responsePtr);
 
   } catch (std::invalid_argument &ex) {
@@ -408,12 +449,11 @@ Oidc::token(HttpRequestPtr req,
                 << " for the code " << code;
       throw std::invalid_argument{"Invalid authorization code or redirect_uri"};
     }
-
     // Retrieve the resource owners database id from redis(Temporary).
     auto redisResultResourceOwnerId = co_await redisClient->execCommandCoro(
         "GET auth_code:%s:resource_owner_id", code.c_str());
     if (redisResultResourceOwnerId.isNil()) {
-      LOG_ERROR << "Redis couldn't find the resource owners id";
+      LOG_ERROR << "Redis couldn't find the resource owners id ";
       throw std::runtime_error{"Redis couldn't find the resource owners id"};
     }
 
@@ -449,7 +489,7 @@ Oidc::token(HttpRequestPtr req,
             .set_payload_claim(
                 "exp", jwt::claim{std::chrono::system_clock::now() +
                                   std::chrono::seconds{Oidc::idTokenExpire}})
-            .sign(jwt::algorithm::es256{*this->ecPubkey, *this->ecPrivkey});
+            .sign(jwt::algorithm::rs256{*this->pubkey, *this->privkey});
 
     // Generate the access token
     auto access_token = utils::getUuid();
@@ -498,10 +538,10 @@ Oidc::keys(HttpRequestPtr req,
   Json::Value certs{Json::ValueType::arrayValue},
       keys{Json::ValueType::arrayValue};
   certs.append(*this->x509Cert);
-  key1["alg"] = "PS256";
-  key1["kty"] = "EC";
+  key1["alg"] = "RS256";
+  key1["kty"] = "RSA";
   key1["use"] = "sig";
-  key1["x5c"] = std::move(certs); 
+  key1["x5c"] = std::move(certs);
   keys.append(std::move(key1));
   root["keys"] = std::move(keys);
 
@@ -678,7 +718,8 @@ Oidc::clientRegister(HttpRequestPtr req,
 
 auto Oidc::generateResponseAuhtorizationCode(size_t &client_id,
                                              std::string &redirect_uri,
-                                             size_t &resource_owner_id)
+                                             size_t &resource_owner_id,
+                                             std::string &state)
     -> Task<HttpResponsePtr> {
   // Generate Authorization Code.
   LOG_DEBUG << "Generate the authorization code";
@@ -708,8 +749,12 @@ auto Oidc::generateResponseAuhtorizationCode(size_t &client_id,
 
   // Redirect the user to the applications redirection url.
   LOG_DEBUG << "Redirect user to the applications redirection url";
-  auto redirectionResponsePtr = HttpResponse::newRedirectionResponse(
-      redirect_uri.append("?code=").append(authorizationCode));
+  redirect_uri.append("?code=").append(authorizationCode);
+  if (!state.empty()) {
+    redirect_uri.append("&state=").append(state);
+  }
+  auto redirectionResponsePtr =
+      HttpResponse::newRedirectionResponse(redirect_uri);
   redirectionResponsePtr->setContentTypeString(
       "application/x-www-form-urlencoded");
   co_return redirectionResponsePtr;

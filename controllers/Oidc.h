@@ -3,8 +3,11 @@
 #include <CredentialRecord.h>
 #include <IdToken.h>
 #include <drogon/HttpController.h>
+#include <filesystem>
 #include <forward_list>
+#include <fstream>
 #include <helper/response.h>
+#include <sstream>
 #include <string>
 
 using namespace drogon;
@@ -12,13 +15,14 @@ using namespace drogon;
 class Oidc : public drogon::HttpController<Oidc> {
 private:
   std::shared_ptr<std::string> iss; // Issuer Identifier
-  std::shared_ptr<std::string> ecPubkey;
-  std::shared_ptr<std::string> ecPrivkey;
+  std::shared_ptr<std::string> pubkey;
+  std::shared_ptr<std::string> privkey;
   std::shared_ptr<std::string> x509Cert;
 
   static auto generateResponseAuhtorizationCode(size_t &client_id,
                                                 std::string &redirect_uri,
-                                                size_t &resource_owner_id)
+                                                size_t &resource_owner_id,
+                                                std::string &state)
       -> Task<HttpResponsePtr>;
 
 public:
@@ -30,10 +34,10 @@ public:
   static const size_t accessTokenExpire; // In seconds
 
   METHOD_LIST_BEGIN
-  METHOD_ADD(
-      Oidc::authorize,
-      "authorize?response_type={1}&client_id={2}&redirect_uri={3}&scope={4}",
-      Get);
+  METHOD_ADD(Oidc::authorize,
+             "authorize?response_type={1}&client_id={2}&redirect_uri={3}&scope="
+             "{4}&state={5}",
+             Get);
   METHOD_ADD(Oidc::grant, "grant?token={1}", Post);
   METHOD_ADD(Oidc::clientRegister,
              "clientRegister?website_uri={1}&app_name={2}&client_type={3}&"
@@ -54,7 +58,7 @@ public:
   authorize(HttpRequestPtr req,
             std::function<void(const HttpResponsePtr &)> callback,
             std::string response_type, std::string client_id,
-            std::string redirect_uri, std::string scope);
+            std::string redirect_uri, std::string scope, std::string state);
 
   drogon::AsyncTask grant(HttpRequestPtr req,
                           std::function<void(const HttpResponsePtr &)> callback,
