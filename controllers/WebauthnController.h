@@ -42,7 +42,7 @@ template <typename T> WebauthnController<T>::WebauthnController() {
         AttestationConveyancePreference::indirect);
     policy->attStmtFmts = std::make_shared<
         std::forward_list<AttestationStatementFormatIdentifier>>();
-    policy->attStmtFmts->push_front(AttestationStatementFormatIdentifier::fido_u2f);
+    //policy->attStmtFmts->push_front(AttestationStatementFormatIdentifier::fido_u2f);
 
     // Create instance of webauthn
     webauthn =
