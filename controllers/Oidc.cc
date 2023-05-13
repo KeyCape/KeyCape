@@ -41,7 +41,7 @@ Oidc::Oidc() {
 
   this->x509Cert = std::make_shared<std::string>(strCert.str());
   this->privkey = std::make_shared<std::string>(strKey.str());
-  this->pubkey = std::make_shared<std::string>(jwt::helper::extract_pubkey_from_cert(std::string{"-----BEGIN CERTIFICATE-----\n"}.append(*this->x509Cert).append("\n-----END CERTIFICATE-----")));
+  this->pubkey = std::make_shared<std::string>(jwt::helper::extract_pubkey_from_cert(*this->x509Cert));
 }
 
 /**
