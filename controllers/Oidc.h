@@ -2,13 +2,32 @@
 #include <Challenge.h>
 #include <CredentialRecord.h>
 #include <IdToken.h>
+#include <cstddef>
+#include <cstdio>
 #include <drogon/HttpController.h>
+#include <drogon/HttpResponse.h>
+#include <drogon/utils/FunctionTraits.h>
+#include <drogon/utils/Utilities.h>
+#include <drogon/utils/coroutine.h>
 #include <filesystem>
 #include <forward_list>
 #include <fstream>
 #include <helper/response.h>
+#include <json/value.h>
+#include <memory>
+#include <openssl/bio.h>
+#include <openssl/bn.h>
+#include <openssl/core_names.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <trantor/utils/Logger.h>
+#include <vector>
 
 using namespace drogon;
 
@@ -18,6 +37,10 @@ private:
   std::shared_ptr<std::string> pubkey;
   std::shared_ptr<std::string> privkey;
   std::shared_ptr<std::string> x509Cert;
+  std::shared_ptr<std::string> x509CertDER;
+  std::shared_ptr<Json::Value> config;
+  std::shared_ptr<std::string> pubKeyE;
+  std::shared_ptr<std::string> pubKeyN;
 
   static auto generateResponseAuhtorizationCode(size_t &client_id,
                                                 std::string &redirect_uri,
@@ -50,6 +73,8 @@ public:
   METHOD_ADD(Oidc::userinfo, "userinfo", Post);
   METHOD_ADD(Oidc::userinfo, "userinfo", Get);
   METHOD_ADD(Oidc::keys, "keys", Get);
+  METHOD_ADD(Oidc::openIdConfiguration, "/.well-known/openid-configuration",
+             Get);
   METHOD_LIST_END
 
   Oidc();
@@ -121,6 +146,10 @@ public:
                  std::function<void(const HttpResponsePtr &)> callback,
                  std::string website_uri, std::string app_name, int client_type,
                  std::string callback_ur);
+
+  drogon::AsyncTask
+  openIdConfiguration(HttpRequestPtr req,
+                      std::function<void(const HttpResponsePtr &)> callback);
 };
 
 // TODO: NEXT STEP: /token ENDPOINT!!

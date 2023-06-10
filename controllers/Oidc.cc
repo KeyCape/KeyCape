@@ -1,4 +1,5 @@
 #include "Oidc.h"
+#include "Base64Url.h"
 
 const size_t Oidc::tokenLen = 16;
 const size_t Oidc::clientIdLen = 16;
@@ -9,26 +10,117 @@ const size_t Oidc::accessTokenExpire = 3600;
 Oidc::Oidc() {
   auto relyingPartyName = std::getenv("WEBAUTHN_RP_NAME");
   if (relyingPartyName != NULL) {
-    this->iss = std::make_shared<std::string>(relyingPartyName);
+    this->iss = std::make_shared<std::string>(std::string{"https://"}.append(relyingPartyName));
   } else {
-    this->iss = std::make_shared<std::string>("localhost");
+    this->iss = std::make_shared<std::string>("https://localhost");
   }
-  std::filesystem::path fileCert = "cert/domain.crt",
-                        fileKey = "cert/domain.key";
+  std::filesystem::path
+      certFolder = "cert",
+      pathFileCert = std::filesystem::path(certFolder).append("domain.crt"),
+      pathFileKey = std::filesystem::path(certFolder).append("domain.key");
   LOG(INFO) << "Loading X509 certificate and corresponding private key from "
                "the files "
-            << fileCert << " and " << fileKey;
+            << pathFileCert << " and " << pathFileKey;
 
-  if (!std::filesystem::exists(fileCert)) {
-    LOG_ERROR << "Missing file " << fileCert;
-    throw std::runtime_error{"Missing certificate file"};
-  }
-  if (!std::filesystem::exists(fileKey)) {
-    LOG_ERROR << "Missing file " << fileKey;
-    throw std::runtime_error{"Missing the private key file"};
-  }
+  // If one of the certificate is missing, generate a self signed as backup.
+  if (!std::filesystem::exists(pathFileCert) ||
+      !std::filesystem::exists(pathFileKey)) {
+    LOG_ERROR << "Missing file(s). Make sure that " << pathFileCert << " and "
+              << pathFileKey << " are available.";
 
-  std::ifstream fileCertFs{fileCert}, fileKeyFs{fileKey};
+    // Verify whether the certificate folder exists or not.
+    if (!std::filesystem::exists(certFolder) ||
+        !std::filesystem::is_directory(certFolder)) {
+      LOG_INFO << "Missing the folder " << certFolder;
+      LOG_INFO << "Creating the folder " << certFolder;
+      std::error_code ec;
+      if (!std::filesystem::create_directory(certFolder, ec)) {
+        LOG_ERROR << "Couldn't create the folder " << certFolder;
+        throw std::runtime_error{ec.message()};
+      }
+    }
+
+    LOG_INFO << "Generate a self signed certificate.";
+    EVP_PKEY *pkey = EVP_RSA_gen(2048);
+    if (pkey == NULL) {
+      LOG_ERROR << "Couldn't create a new asymmetric key structure";
+      throw std::runtime_error{
+          "Couldn't create a new asymmetric key structure"};
+    }
+
+    X509 *x509 = X509_new();
+    if (x509 == NULL) {
+      LOG_ERROR << "Couldn't allocate and initialize a new x509 structure";
+      EVP_PKEY_free(pkey);
+      throw std::runtime_error{ERR_reason_error_string(ERR_get_error())};
+    }
+
+    X509_NAME *subName;
+    ASN1_INTEGER_set(X509_get_serialNumber(x509), 1);
+    X509_gmtime_adj(X509_get_notBefore(x509), 0);
+    // 365 days
+    X509_gmtime_adj(X509_get_notAfter(x509), 31536000L);
+    X509_set_pubkey(x509, pkey);
+    subName = X509_get_subject_name(x509);
+
+    X509_NAME_add_entry_by_txt(subName, "C", MBSTRING_ASC,
+                               (unsigned char *)"CA", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(subName, "O", MBSTRING_ASC,
+                               (unsigned char *)"identity provider", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(subName, "CN", MBSTRING_ASC,
+                               (unsigned char *)"localhost", -1, -1, 0);
+
+    X509_set_issuer_name(x509, subName);
+    X509_sign(x509, pkey, EVP_sha1());
+
+    LOG_INFO << "Store " << pathFileCert;
+    FILE *domainKey = fopen(pathFileKey.c_str(), "wb");
+    // PEM_write_RSAPrivateKey(domainKey, rsa, NULL, NULL, 0, NULL, NULL);
+    PEM_write_PrivateKey(domainKey, pkey, NULL, NULL, 0, NULL, NULL);
+    fclose(domainKey);
+
+    LOG_INFO << "Store " << pathFileKey;
+    FILE *domainCert = fopen(pathFileCert.c_str(), "wb");
+    PEM_write_X509(domainCert, x509);
+    fclose(domainCert);
+
+    /*
+    std::vector<unsigned char> bufE(bufSize);
+    if (!EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_RSA_E,
+                                         bufE.data(), bufE.size(), &bufSize)) {
+      LOG_ERROR << "Couldn't get the octet string of param e of RSA.";
+      X509_free(x509);
+      EVP_PKEY_free(pkey);
+      throw std::runtime_error{
+          "Couldn't get the octet string of param e of RSA."};
+    }
+    LOG_INFO << "Domain parameter e: " << bufE.data();
+    */
+
+    X509_free(x509);
+    EVP_PKEY_free(pkey);
+  }
+  /*
+    auto fileCert = std::fopen(pathFileCert.c_str(), "r");
+    if(!fileCert) {
+            LOG_ERROR << "Couldn't open the file " << pathFileCert;
+            throw std::runtime_error{std::strerror(errno)};
+    }
+
+    auto fileKey = std::fopen(pathFileKey.c_str(), "r");
+    if(!fileKey) {
+            LOG_ERROR << "Couldn't open the file " << pathFileKey;
+            fclose(fileCert);
+            throw std::runtime_error{std::strerror(errno)};
+    }
+
+    this->x509Cert = std::make_shared<std::string>();
+    this->pubkey = std::make_shared<std::string>();
+
+    fclose(fileCert);
+    fclose(fileKey);*/
+
+  std::ifstream fileCertFs{pathFileCert}, fileKeyFs{pathFileKey};
   std::ostringstream strCert, strKey;
 
   LOG(INFO) << "Reading the cert file";
@@ -41,7 +133,116 @@ Oidc::Oidc() {
 
   this->x509Cert = std::make_shared<std::string>(strCert.str());
   this->privkey = std::make_shared<std::string>(strKey.str());
-  this->pubkey = std::make_shared<std::string>(jwt::helper::extract_pubkey_from_cert(*this->x509Cert));
+  this->pubkey = std::make_shared<std::string>(
+      jwt::helper::extract_pubkey_from_cert(*this->x509Cert));
+
+  auto bioMemX509 = BIO_new(BIO_s_mem());
+  if (bioMemX509 == NULL) {
+    LOG_ERROR << "Couldn't create bio in memory.";
+    throw std::runtime_error("Couldn't create bio in memory.");
+  }
+
+  if (BIO_write(bioMemX509, this->x509Cert->data(), this->x509Cert->size()) <
+      1) {
+    LOG_ERROR << "Couldn't write the x509 cert into bio.";
+    BIO_free(bioMemX509);
+    throw std::runtime_error{"Couldn't write the x509 cert into bio."};
+  }
+
+  X509 *x509 = NULL;
+  PEM_read_bio_X509(bioMemX509, &x509, NULL, NULL);
+  if (x509 == NULL) {
+    LOG_ERROR << "Couldn't read the x509 cert from bio into x509 object.";
+    BIO_free(bioMemX509);
+    throw std::runtime_error{
+        "Couldn't read the x509 cert from bio into x509 object."};
+  }
+  BIO_free(bioMemX509);
+
+  auto pkey = X509_get_pubkey(x509);
+  if (pkey == NULL) {
+    LOG_ERROR << "Couldn't extract the public key from the x509 structure.";
+    X509_free(x509);
+    throw std::runtime_error{
+        "Couldn't extract the public key from the x509 structure."};
+  }
+
+  // Encode x509 in DER
+  unsigned char *tmpX509DER = NULL;
+  auto sizeTmpX509DER = i2d_X509(x509, &tmpX509DER);
+  if (sizeTmpX509DER < 0) {
+    LOG_ERROR << "Couldn't encode the x509 cert to DER";
+    EVP_PKEY_free(pkey);
+    X509_free(x509);
+    throw std::runtime_error{ERR_reason_error_string(ERR_get_error())};
+  }
+  this->x509CertDER = std::make_shared<std::string>(
+      drogon::utils::base64Encode(tmpX509DER, sizeTmpX509DER));
+  LOG_INFO << "x509 in DER with base64: " << *this->x509CertDER;
+
+  // Extract the public key exponent e
+  BIGNUM *bnE = NULL;
+  if (EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_E, &bnE) != 1) {
+    LOG_ERROR
+        << "Couldn't determine the size of the parameter e from the RSA key.";
+    X509_free(x509);
+    EVP_PKEY_free(pkey);
+    throw std::runtime_error{
+        "Couldn't determine the size of the parameter e from the RSA key."};
+  }
+
+  // Encode the public key exponent e to base64
+  std::vector<unsigned char> vecE(BN_num_bytes(bnE));
+  BN_bn2bin(bnE, vecE.data());
+  BN_free(bnE);
+  this->pubKeyE = std::make_shared<std::string>(
+      drogon::utils::base64Encode(vecE.data(), vecE.size()));
+  LOG_INFO << "Public key exponent e=" << *this->pubKeyE;
+  Base64Url::encode(this->pubKeyE);
+
+  // Extract the public key modulo n
+  BIGNUM *bnN = NULL;
+  if (EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &bnN) != 1) {
+    LOG_ERROR
+        << "Couldn't determine the size of the parameter e from the RSA key.";
+    X509_free(x509);
+    EVP_PKEY_free(pkey);
+    throw std::runtime_error{
+        "Couldn't determine the size of the parameter e from the RSA key."};
+  }
+
+  // Encode the public key modulo n to base64
+  std::vector<unsigned char> vecN(BN_num_bytes(bnN));
+  BN_bn2bin(bnN, vecN.data());
+  BN_free(bnN);
+  this->pubKeyN = std::make_shared<std::string>(
+      drogon::utils::base64Encode(vecN.data(), vecN.size()));
+  LOG_INFO << "Public key modulo n=" << *this->pubKeyN;
+  Base64Url::encode(this->pubKeyN);
+
+  /*
+  FILE *filePub = fopen("cert/pub.pem", "wb");
+  PEM_write_PUBKEY(filePub, pkey);
+
+  BIO *bioMemPubKey = BIO_new(BIO_s_mem());
+  PEM_write_bio_PUBKEY(bioMemPubKey, pkey);
+  size_t lenPubKey = BIO_ctrl_pending(bioMemPubKey);
+  LOG_INFO << "The public key is " << lenPubKey << " bytes long";
+
+  std::vector<char> vecPubKey(lenPubKey);
+  BIO_read(bioMemPubKey, vecPubKey.data(), vecPubKey.size());
+
+  LOG_INFO << "Public key: " << vecPubKey.data();
+*/
+  X509_free(x509);
+  EVP_PKEY_free(pkey);
+
+  // Generate the OpenID Provider Configuration
+  if (!this->config) {
+    LOG_DEBUG << "Generate OpenID Provider Configuration";
+    this->config = std::make_shared<Json::Value>();
+    (*this->config)["issuer"] = *this->iss;
+  }
 }
 
 /**
@@ -501,6 +702,8 @@ Oidc::token(HttpRequestPtr req,
     resJson["token_type"] = "Bearer";
     resJson["id_token"] = jwt;
 
+    LOG_DEBUG << "ID Token: " << jwt;
+
     // Store the access_token in Redis
     co_await redisClient->execCommandCoro("SET access_token:%s:user_id %s",
                                           access_token.c_str(), sub->c_str());
@@ -537,11 +740,13 @@ Oidc::keys(HttpRequestPtr req,
   Json::Value root, key1;
   Json::Value certs{Json::ValueType::arrayValue},
       keys{Json::ValueType::arrayValue};
-  certs.append(*this->x509Cert);
+  certs.append(*this->x509CertDER);
   key1["alg"] = "RS256";
   key1["kty"] = "RSA";
   key1["use"] = "sig";
   key1["x5c"] = std::move(certs);
+  key1["e"] = *this->pubKeyE;
+  key1["n"] = *this->pubKeyN;
   keys.append(std::move(key1));
   root["keys"] = std::move(keys);
 
@@ -591,7 +796,7 @@ Oidc::userinfo(HttpRequestPtr req,
 
   LOG_DEBUG << "Generate response";
   Json::Value res;
-  res["sub"] = sqlResultResourceOwner[0]["id"].as<size_t>();
+  res["sub"] = sqlResultResourceOwner[0]["id"].as<std::string>();
   res["username"] = sqlResultResourceOwner[0]["username"].as<std::string>();
 
   callback(HttpResponse::newHttpJsonResponse(res));
@@ -758,4 +963,13 @@ auto Oidc::generateResponseAuhtorizationCode(size_t &client_id,
   redirectionResponsePtr->setContentTypeString(
       "application/x-www-form-urlencoded");
   co_return redirectionResponsePtr;
+}
+
+drogon::AsyncTask Oidc::openIdConfiguration(
+    HttpRequestPtr req, std::function<void(const HttpResponsePtr &)> callback) {
+  LOG_DEBUG << "Request on " << req->getPath() << " from "
+            << req->getPeerAddr().toIp();
+  callback(HttpResponse::newHttpJsonResponse(*this->config));
+
+  co_return;
 }
