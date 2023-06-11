@@ -1,5 +1,10 @@
 #include "Oidc.h"
 #include "Base64Url.h"
+#include "jwt-cpp/jwt.h"
+#include <algorithm>
+#include <drogon/utils/Utilities.h>
+#include <iterator>
+#include <json/value.h>
 
 const size_t Oidc::tokenLen = 16;
 const size_t Oidc::clientIdLen = 16;
@@ -10,7 +15,8 @@ const size_t Oidc::accessTokenExpire = 3600;
 Oidc::Oidc() {
   auto relyingPartyName = std::getenv("WEBAUTHN_RP_NAME");
   if (relyingPartyName != NULL) {
-    this->iss = std::make_shared<std::string>(std::string{"https://"}.append(relyingPartyName));
+    this->iss = std::make_shared<std::string>(
+        std::string{"https://"}.append(relyingPartyName));
   } else {
     this->iss = std::make_shared<std::string>("https://localhost");
   }
@@ -693,7 +699,19 @@ Oidc::token(HttpRequestPtr req,
             .sign(jwt::algorithm::rs256{*this->pubkey, *this->privkey});
 
     // Generate the access token
-    auto access_token = utils::getUuid();
+    auto access_token =
+        jwt::create()
+            .set_type("jwt")
+            .set_payload_claim("iss", jwt::claim{*this->iss})
+            .set_payload_claim("aud", jwt::claim{*aud})
+            .set_payload_claim("sub", jwt::claim{*sub})
+            .sign(jwt::algorithm::rs256{*this->pubkey, *this->privkey});
+    /*auto access_token =
+    std::make_shared<std::string>(drogon::utils::getUuid()); access_token =
+    std::make_shared<std::string>(drogon::utils::base64Encode(
+        reinterpret_cast<const unsigned char *>(access_token->c_str()),
+        access_token->size()));
+    Base64Url::encode(access_token);*/
 
     // Create the token response JSON
     Json::Value resJson;
