@@ -1,0 +1,28 @@
+- title: Security by design
+  content: KeyCape is built on protocols with security in the first place. It relies on <a href="https://webauthn.guide/">WebAuthn</a> for registration and authentication. <a href="https://openid.net/developers/how-connect-works/">OpenID Connect</a> is used to connect applications.
+  icon:
+    name: bi bi-lightning
+    color: yellow
+  link: # 
+
+- title: Passwordless
+  content: No more passwords!
+    <b>81%</b> of all hacking-related breaches leveraged either stolen and/or weak passwords according to an <a href="https://www.verizon.com/business/verizonpartnersolutions/business/resources/reports/2017_dbir.pdf">report from verizon in 2017</a>.
+  icon:
+    name: bi bi-braces-asterisk
+    color: red
+  link: #
+
+- title: Authenticator
+  content: Signatures instead of passwords! Use your favorite authenticator to log in. Be it a yubikey, smartphone or TPM.
+  icon:
+    name: bi bi-key
+    color: green
+  link: #
+
+- title: SSO
+  content: Use Single Sign-on to log in to various services like Owcloud.
+  icon:
+    name: bi bi-door-open
+    color: lightblue
+  link: #
