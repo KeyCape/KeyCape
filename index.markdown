@@ -53,7 +53,7 @@ layout: default
 				{% assign screenshot_files = site.static_files | where: "screenshot", true %}
 				{% for screenshot in screenshot_files %}
 				<div class="carousel-item {% if forloop.first == true %} active {% endif %}">
-					<img class="d-block w-100" src="{{ screenshot.path }}">
+					<img class="d-block w-100" src="{{ screenshot.path | remove_first: "/"}}">
 				</div>
 				{% endfor %}
 			</div>
