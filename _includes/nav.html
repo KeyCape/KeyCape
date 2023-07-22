@@ -1,5 +1,5 @@
-<nav class="navbar navbar-expand-lg">
-	<div class="container-fluid">
+<nav class="navbar navbar-expand-lg" style="background-color:#263946">
+	<div class="container container-fluid">
 		<a class="navbar-brand" href="{{ site.title }}"></a>
 		<div class="collapse navbar-collapse">
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
@@ -8,6 +8,11 @@
 					<a class="nav-link" href="{{ item.url }}">{{ item.title }}</a>
 				</li>
 				{% endfor %}
+			</ul>
+			<ul class="navbar-nav mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="d-inline-flex align-items-center btn btn-lg rounded-pill" href="https://github.com/c3ai-lab/KeyCape"><i class="bi bi-github me-2"></i></a>
+				</li>
 			</ul>
 		</div>
 	</div>
