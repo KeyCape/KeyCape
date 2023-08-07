@@ -4,7 +4,11 @@
 .clangd/*
 build/*
 doc/*
+frontend/dist
+frontend/elm-stuff
 
+### APPLE ###
+*.DS_STORE
 ### C ###
 # Prerequisites
 *.d
