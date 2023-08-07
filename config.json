@@ -53,7 +53,9 @@
             "xap",
             "apk",
             "cur",
-            "xml"
+            "xml",
+	    "woff",
+	    "woff2"
         ],
         "mime": {},
         "locations": [
