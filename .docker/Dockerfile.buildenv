@@ -2,8 +2,11 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update \
-	&& apt install -y libjsoncpp-dev uuid-dev libssl-dev zlib1g-dev libmariadb-dev cmake make git gcc-12 libhiredis-dev libgoogle-glog-dev python3-pip \
+	&& apt install -y libjsoncpp-dev uuid-dev libssl-dev zlib1g-dev libmariadb-dev cmake make git gcc-12 libhiredis-dev libgoogle-glog-dev python3-pip curl wget \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Used in order to compile the frontend
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt install -y nodejs
 
 RUN pip3 install jsonschema
 RUN pip3 install jinja2
