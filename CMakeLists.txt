@@ -5,9 +5,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/static/index.html ${CMAKE_CURRENT_BINARY_DIR}/static/index.html COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/static/clientRegister.html ${CMAKE_CURRENT_BINARY_DIR}/static/clientRegister.html COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_BINARY_DIR}/config.json COPYONLY)
+
+execute_process(
+	COMMAND npm install 
+	WORKING_DIRECTORY frontend
+)
+
+# Build frontend
+add_custom_target(
+	frontend ALL
+	COMMAND npm run build  && cp dist/* ${CMAKE_BINARY_DIR}/static
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/frontend
+)
+
+# ---
 
 add_custom_target(
     copy-compile-commands ALL
