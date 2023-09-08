@@ -10,13 +10,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_BINARY_DI
 
 execute_process(
 	COMMAND npm install 
-	WORKING_DIRECTORY frontend
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/frontend
 )
 
 # Build frontend
 add_custom_target(
 	frontend ALL
-	COMMAND npm run build  && cp dist/* ${CMAKE_BINARY_DIR}/static
+	COMMAND npm run build
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/frontend
 )
 
