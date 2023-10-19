@@ -7,7 +7,7 @@ layout: default
 		<h1 class="text-body-emphasis display-2">{{ site.title }}</h1>
 		<p class="col-lg-8 mx-auto fs-5 text-muted fs-4"> KeyCape is a zero password solution. It relies on signatures instead of passwords. You an authenticator of your choice: <b>YubiKey, Passkey, Smartphone, TPM</b></p>
 		<div class="d-inline-flex gap-2 mb-5">
-			<a class="d-inline-flex align-items-center btn btn-primary btn-lg px-4 rounded-pill" href="https://github.com/c3ai-lab/KeyCape"><i class="bi bi-github me-2"></i>Github</a>
+			<a class="d-inline-flex align-items-center btn btn-primary btn-lg px-4 rounded-pill" href="https://github.com/KeyCape/KeyCape"><i class="bi bi-github me-2"></i>Github</a>
 			<a class="btn btn-outline-secondary btn-lg px-4 rounded-pill" href="https://jesper1995.gitbook.io/identity-provider-cpp/quick-start/prerequisites">Docs</a>
 		</div>
 	</div>
