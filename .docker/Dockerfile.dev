@@ -2,9 +2,17 @@ FROM  mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-22.04
 
 WORKDIR /setup
 ENV DEBIAN_FRONTEND=noninteractive
+ENV NODE_MAJOR=21
 RUN apt update \
-	&& apt install -y libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev libmariadb-dev clang-12 clangd-12 zsh cmake make doxygen git curl gcc-12 libhiredis-dev libgoogle-glog-dev python3-pip \
+	&& apt install -y libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev libmariadb-dev clang-12 clangd-12 zsh cmake make doxygen git curl gcc-12 libhiredis-dev libgoogle-glog-dev python3-pip ca-certificates gnupg \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Used in order to compile the frontend
+RUN mkdir -p /etc/apt/keyrings \ 
+	&& curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \ 
+	&& echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \ 
+	&& apt update \ 
+	&& apt install nodejs -y
 
 RUN pip3 install jsonschema
 RUN pip3 install jinja2
