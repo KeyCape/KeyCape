@@ -1,26 +1,38 @@
 version: '3'
 services:
-  relying-party:
+  keycape:
    build:
-     context: .docker
-     dockerfile: Dockerfile.dev
-   container_name: 'relying-party'
+      context: ./
+      dockerfile: .docker/Dockerfile.dev
    stdin_open: true
    tty: true
+   user: 'vscode:1000'
    ports:
      - 80:80
-   command: zsh
-   user: 'vscode:1000'
+     - 8000:8000
    restart: always
-  rp_db:
+   environment:
+    WEBAUTHN_RP_ID: localhost
+    WEBAUTHN_RP_NAME: localhost
+   depends_on:
+      - db
+      - redis
+   volumes:
+     - ./:/server
+  db:
    image: mariadb
-   container_name: 'rp_db'
    restart: always
    environment: 
     MARIADB_ROOT_PASSWORD: dev
    volumes:
-    - ./docker/mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-  rp_redis:
+    - .docker/mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+  redis:
     image: redis:latest
-    container_name: 'rp_redis'
     restart: always
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      - PMA_ARBITRARY=1
