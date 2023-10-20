@@ -2,7 +2,7 @@ FROM  mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-22.04
 
 WORKDIR /setup
 ENV DEBIAN_FRONTEND=noninteractive
-ENV NODE_MAJOR=21
+ENV NODE_MAJOR=18
 RUN apt update \
 	&& apt install -y libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev libmariadb-dev clang-12 clangd-12 zsh cmake make doxygen git curl gcc-12 libhiredis-dev libgoogle-glog-dev python3-pip ca-certificates gnupg \
 	&& rm -rf /var/lib/apt/lists/*
