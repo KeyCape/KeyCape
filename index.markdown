@@ -4,6 +4,7 @@ layout: default
 <div class="container-fluid" id="banner">
 <div class="row align-items-center justify-content-center" style="height:90vh">
 	<div class="col-lg-6 text-center">
+		<img src="/assets/img/favicon.png" class="d-inline-block align-text-top" alt="Logo" width="256">
 		<h1 class="text-body-emphasis display-2">{{ site.title }}</h1>
 		<p class="col-lg-8 mx-auto fs-5 text-muted fs-4"> KeyCape is a zero password solution. It relies on signatures instead of passwords. You an authenticator of your choice: <b>YubiKey, Passkey, Smartphone, TPM</b></p>
 		<div class="d-inline-flex gap-2 mb-5">
