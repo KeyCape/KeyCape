@@ -1,4 +1,6 @@
-<center><img src="img/keycape_transparent.png" height="256px"></center>
+<p align="center">
+<img src="img/keycape_transparent.png" height="256px">
+</p>
 
 ![](https://github.com/KeyCape/KeyCape/actions/workflows/pages/pages-build-deployment/badge.svg)
 # Overview
