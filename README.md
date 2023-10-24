@@ -1,4 +1,6 @@
-[![Build Status](https://drone.ogkw.de/api/badges/jesper-sec/identity-provider-cpp/status.svg)](https://drone.ogkw.de/jesper-sec/identity-provider-cpp)
+<center><img src="img/keycape_transparent.png" height="256px"></center>
+
+![](https://github.com/KeyCape/KeyCape/actions/workflows/pages/pages-build-deployment/badge.svg)
 # Overview
 This project is an identity provider implemented in C++. It leverages the library `libwebauthn-cpp` to enable the usage of passwordless authentication.
 
@@ -59,4 +61,4 @@ docker-compose up
 ```
 
 Now open the following link:
-[http://localhost](http://localhost)
+[localhost](http://localhost)
