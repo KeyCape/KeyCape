@@ -116,7 +116,7 @@ function isPubKeyCred(cred: Credential | null): cred is PublicKeyCredential {
 					<input v-model="username" class="form-control" type="input">
 					<div class="form-text">
 						Not member yet?
-						<RouterLink class="primary-link text-decoration-none" to="/register">Login
+						<RouterLink class="primary-link text-decoration-none" to="/register">Register
 						</RouterLink>
 					</div>
 				</div>

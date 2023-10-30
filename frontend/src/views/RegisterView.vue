@@ -113,7 +113,7 @@ function isPubKeyCred(cred: Credential | null): cred is PublicKeyCredential {
 			</div>
 			<div class="card-body">
 				<h1 class="pb-2">Sign up</h1>
-				<p class="pb-2">Enter your username {{ username }}</p>
+				<p class="pb-2">Enter your username</p>
 				<div class="mb-5">
 					<input v-model="username" class="form-control" type="input">
 					<div class="form-text">
