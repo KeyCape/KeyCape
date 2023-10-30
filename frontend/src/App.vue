@@ -23,7 +23,7 @@ export default defineComponent({
 <template>
 	<nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top">
 		<div class="container container-fluid">
-			<a href="/" class="navbar-brand">KeyCape</a>
+			<a href="/" class="navbar-brand"><img src="/keycape_transparent_64.png" width="64"></a>
 			<div class="collapse navbar-collapse">
 				<div class="navbar-nav">
 					<RouterLink class="nav-link" to="/">Home</RouterLink>
