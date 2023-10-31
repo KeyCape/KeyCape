@@ -23,15 +23,14 @@ export default defineComponent({
 <template>
 	<nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top">
 		<div class="container container-fluid">
-			<a href="/" class="navbar-brand"><img src="/keycape_transparent_64.png" width="64"></a>
+			<a href="/" class="navbar-brand"><img src="/keycape_transparent_bg.png" width="100" height="100" style="position: absolute; left: calc(50% - 50px); top: 2px;"></a>
 			<div class="collapse navbar-collapse">
 				<div class="navbar-nav">
-					<RouterLink class="nav-link" to="/">Home</RouterLink>
+					<RouterLink class="nav-link" to="/"><i class="bi bi-house"></i> Home</RouterLink>
 				</div>
 			</div>
 			<div class="navbar-nav">
-				<RouterLink class="btn btn-outline-secondary me-2" to="/register">Register</RouterLink>
-				<RouterLink class="btn btn-outline-success" to="/login">Login</RouterLink>
+				<RouterLink class="nav-link" to="/login"><i class="bi bi-box-arrow-in-right"></i> Sign in</RouterLink>
 			</div>
 		</div>
 	</nav>
