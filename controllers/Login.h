@@ -4,6 +4,7 @@
 #include <CredentialRecord.h>
 #include <cstdlib>
 #include <drogon/HttpController.h>
+#include <SessionToken.h>
 
 using namespace drogon;
 

@@ -245,26 +245,30 @@ Login::finish(HttpRequestPtr req,
     }*/
     LOG_INFO << "User " << *credRecIt->uName << " logged in";
 
+    // Generate session token
+    auto sToken = SessionToken{};
+    sToken.resourceOwnerId =
+        std::make_shared<std::size_t>(sqlResultUserCredentialList[0]["fk_resource_owner_id"].as<size_t>());
+    sToken.credentialId = credRecIt->id;
+    sToken.tm = std::make_shared<int64_t>(std::chrono::duration_cast<std::chrono::seconds>(
+                          std::chrono::system_clock::now().time_since_epoch())
+                          .count());
+
     // Set session token
     LOG_INFO << "Set session token";
     auto sessionPtr = req->session();
     if (sessionPtr->find("token")) {
       LOG_DEBUG << "Token already set. Modifying token";
-      sessionPtr->modify<CredentialRecord>(
-          "token", [credRecIt](CredentialRecord &rec) { rec = *credRecIt; });
+      sessionPtr->modify<SessionToken>(
+          "token", [sToken](SessionToken &token) { token = sToken; });
     } else {
-      sessionPtr->insert("token", *credRecIt);
+      sessionPtr->insert("token", sToken);
     }
 
     // Used by openId connects ID Token
     LOG_DEBUG << "Set the users last login time in redis";
-    co_await redisClient->execCommandCoro(
-        "SET user:%u:last_login %d",
-        sqlResultUserCredentialList[0]["fk_resource_owner_id"]
-            .as<size_t>(),
-        std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+    co_await redisClient->execCommandCoro("SET user:%u:last_login %d",
+                                          *sToken.resourceOwnerId, *sToken.tm);
 
     callback(drogon::HttpResponse::newHttpResponse());
   } catch (std::invalid_argument &ex) {
