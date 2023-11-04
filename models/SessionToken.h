@@ -2,8 +2,9 @@
 #include <memory>
 #include <string>
 #include <cstdlib>
+#include <IJsonSerialize.h>
 
-class SessionToken {
+class SessionToken : IJsonSerialize {
     public:
     // Database id of the resource owner
     std::shared_ptr<std::size_t> resourceOwnerId;
@@ -12,5 +13,6 @@ class SessionToken {
     std::shared_ptr<std::string> resourceOwnerName;
 
     SessionToken();
+    virtual std::unique_ptr<Json::Value> getJson();
     ~SessionToken();
 };
